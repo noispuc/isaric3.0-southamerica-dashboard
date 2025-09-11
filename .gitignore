@@ -1,0 +1,78 @@
+# 🚫 Arquivos de cache do Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+*.manifest
+*.spec
+
+# ⚙️ Ambientes virtuais
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+env.bak/
+
+# 📦 Instalações de pacote
+pip-wheel-metadata/
+*.dist-info/
+dist/
+build/
+*.whl
+
+# 📊 Jupyter e IPython
+.ipynb_checkpoints
+*.ipynb
+
+# 📷 Matplotlib, PyPlot, Plotly
+*.png
+*.svg
+*.pdf
+*.eps
+*.jpg
+*.jpeg
+
+# 📈 Arquivos de log e saída temporária
+*.log
+*.out
+*.tmp
+*.bak
+
+# 🧪 Testes e relatórios
+.coverage
+htmlcov/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+.pytest_cache/
+.tox/
+
+# 📄 Documentação com MkDocs e Mermaid
+site/
+*.mermaid
+
+# 🧠 VSCode e IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# 🔑 Secrets e configurações locais
+.env
+*.env.*
+.envrc
+secrets.yml
+*.key
+*.pem
+
+# 🎯 GitHub Actions temporários
+*.log
+workflow-temp/
+
+

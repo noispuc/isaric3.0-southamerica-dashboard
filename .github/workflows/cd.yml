@@ -1,0 +1,20 @@
+name: CD Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Ambiente para deploy'
+        required: true
+        default: 'dev'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy para ${{ inputs.environment }}
+        run: |
+          echo "Deploy em ${{ inputs.environment }}"
+          # Adicione comandos específicos por ambiente aqui
