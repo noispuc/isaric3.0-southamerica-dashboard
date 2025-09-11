@@ -1,0 +1,22 @@
+name: CI Workflow
+
+on:
+  push:
+    branches: [ main, dev ]
+
+jobs:
+  test-python:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install -r tests/requirements.txt
+      - name: Run tests
+        run: python -m unittest discover tests/
