@@ -1,0 +1,62 @@
+name: Docker Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd "pg_isready -U test_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up environment for CI
+        run: |
+          echo "APP_ENV=ci" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: docker build -t isaric-vertex .
+
+      - name: Run Docker container (connected to postgres)
+        run: |
+          docker run -d -p 80:8050 \
+            -e APP_ENV=ci \
+            -e DATABASE_URL=postgresql+psycopg2://test_user:test_password@host.docker.internal:5432/test_db \
+            --name isaric-vertex isaric-vertex
+
+      - name: Wait for container to be ready
+        run: sleep 10
+
+      - name: Check health
+        run: |
+          for i in {1..10}; do
+            if curl -sSf http://localhost:80 >/dev/null; then
+              echo "App responding"
+              exit 0
+            fi
+            echo "Waiting for app..."
+            sleep 2
+          done
+          exit 1
+
+      - name: Cleanup
+        run: docker stop isaric-vertex && docker rm isaric-vertex
