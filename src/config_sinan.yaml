@@ -1,0 +1,151 @@
+project: sinan-dengue
+version: '0.2'
+
+database:
+  schema: sinan
+  dsn_env: POSTGRES_DSN   # pode ficar, mas o script usa PGUSER/PGPASSWORD etc.
+
+ingest:
+  source_encoding: latin-1   # (pode ser "latin1" também)
+  pk: []
+  deduplicate_on: []
+  load_table: staging_solicitacao
+
+tables:
+  - name: staging_solicitacao
+    type: staging
+    columns:
+      id_municip: varchar(7)     # IBGE preserva zeros à esquerda
+      id_mn_resi: varchar(7)
+      sg_uf: char(2)             # "RJ", "SP", ...
+      uf: integer
+      cs_sexo: char(1)
+      nu_idade_n: integer
+      classi_fin: integer
+      evolucao: integer
+      hospitaliz: integer
+      tp_not: integer
+      id_agravo: varchar(16)
+      dt_notific: date
+      dt_sin_pri: date
+      doenca: varchar(32)
+      ano: integer               # <<< era "date"
+    indexes:
+      - [dt_notific]
+      - [id_municip]
+      - [classi_fin]
+
+  - name: casos
+    type: core
+    create_as: |
+      SELECT
+        id_municip,
+        id_mn_resi,
+        sg_uf,
+        uf,
+        cs_sexo,
+        nu_idade_n AS idade,
+        classi_fin,
+        evolucao,
+        hospitaliz,
+        tp_not,
+        id_agravo,
+        dt_notific,
+        dt_sin_pri,
+        doenca,
+        ano
+      FROM {{schema}}.staging_solicitacao
+
+views:
+  - name: vw_casos_diarios
+    sql: |
+      SELECT
+        dt_notific::date AS data,
+        id_municip,
+        COUNT(*) AS casos
+      FROM {{schema}}.casos
+      GROUP BY 1,2
+
+  - name: vw_inc_mun_semanal
+    materialized: true
+    sql: |
+      WITH sem AS (
+        SELECT
+          date_trunc('week', dt_notific)::date AS semana,
+          id_municip,
+          COUNT(*) AS casos
+        FROM {{schema}}.casos
+        GROUP BY 1,2
+      )
+      SELECT s.semana,
+             s.id_municip,
+             s.casos,
+             p.pop AS populacao,
+             (s.casos::numeric / NULLIF(p.pop,0)) * 100000 AS incidencia_100k
+      FROM sem s
+      LEFT JOIN aux.pop_municipios p USING (id_municip)
+
+  - name: vw_taxa_hosp_dengue
+    sql: |
+      WITH base AS (
+        SELECT
+          dt_notific::date AS data,
+          id_municip,
+          CASE WHEN classi_fin IN (10,11,12) THEN 1 ELSE 0 END AS caso_confirmado,
+          CASE WHEN hospitaliz = 1 THEN 1 ELSE 0 END AS hospitalizado
+        FROM {{schema}}.casos
+      )
+      SELECT data, id_municip,
+             100.0 * SUM(hospitalizado)::numeric / NULLIF(SUM(caso_confirmado),0) AS taxa_hosp_percent
+      FROM base
+      GROUP BY 1,2
+
+  - name: vw_taxa_letalidade
+    sql: |
+      WITH base AS (
+        SELECT
+          dt_notific::date AS data,
+          id_municip,
+          CASE WHEN classi_fin IN (10,11,12) THEN 1 ELSE 0 END AS caso_confirmado,
+          CASE WHEN evolucao IN (1) THEN 1 ELSE 0 END AS obito   -- ajuste os códigos conforme seu dicionário
+        FROM {{schema}}.casos
+      )
+      SELECT data, id_municip,
+             100.0 * SUM(obito)::numeric / NULLIF(SUM(caso_confirmado),0) AS taxa_letalidade_percent
+      FROM base
+      GROUP BY 1,2
+
+  - name: vw_obitos_100k
+    sql: |
+      WITH d AS (
+        SELECT
+          dt_notific::date AS data,
+          id_municip,
+          CASE WHEN evolucao IN (1) THEN 1 ELSE 0 END AS obito
+        FROM {{schema}}.casos
+      )
+      SELECT
+        data,
+        id_municip,
+        SUM(obito) AS obitos,
+        p.pop AS populacao,
+        (SUM(obito)::numeric / NULLIF(p.pop,0)) * 100000 AS obitos_100k
+      FROM d
+      LEFT JOIN aux.pop_municipios p USING (id_municip)
+      GROUP BY 1,2,4
+
+grants:
+  - role: vertex_ro
+    on:
+      - vw_casos_diarios
+      - vw_inc_mun_semanal
+      - vw_taxa_hosp_dengue
+      - vw_taxa_letalidade
+      - vw_obitos_100k
+    privileges: [SELECT]
+
+refresh:
+  materialized_views:
+    - name: vw_inc_mun_semanal
+      on_load: true
+      schedule_hint: "daily 03:00"
