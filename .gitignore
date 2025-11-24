@@ -75,4 +75,6 @@ secrets.yml
 *.log
 workflow-temp/
 
-
+datas/
+src/postgre-script/config_sinan.yaml
+src/postgre-script/sinan.env

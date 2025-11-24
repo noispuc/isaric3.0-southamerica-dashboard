@@ -69,7 +69,7 @@ def build_engine() -> Any:
 # -----------------------------
 # Load env / config
 # -----------------------------
-CONFIG_PATH = env("CONFIG_PATH", "config_sinan.yaml")
+CONFIG_PATH = _here / "config_sinan.yaml"
 SCHEMA_TARGET = env("SCHEMA_TARGET", "sinan")
 
 INPUT_DBC = env("INPUT_DBC")
