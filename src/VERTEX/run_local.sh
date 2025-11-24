@@ -20,4 +20,9 @@ docker run --rm \
   -v "$(pwd)":$WORKDIR \
   -p $PORT:$PORT \
   -w $WORKDIR \
+  -e PGHOST="host.docker.internal" \
+  -e PGPORT="5432" \
+  -e PGUSER="postgres" \
+  -e PGPASSWORD="root" \
+  -e PGDATABASE="datasus" \
   -t $IMAGE_NAME

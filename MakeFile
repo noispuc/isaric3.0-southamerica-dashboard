@@ -34,3 +34,9 @@ clean-all:
 	-@docker volume rm $$(docker volume ls -q)
 	-@docker builder prune
 	@echo "Cleanup completed!"
+
+open-sql:
+	psql -h localhost -p 5432 postgres
+
+enter-docker:
+	docker exec -it vertex sh
