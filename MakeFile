@@ -36,7 +36,7 @@ clean-all:
 	@echo "Cleanup completed!"
 
 open-sql:
-	psql -h localhost -p 5432 postgres
+	psql -h localhost -p 5432 -U postgres -d datasus
 
 enter-docker:
 	docker exec -it vertex sh
