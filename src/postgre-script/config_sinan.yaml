@@ -15,9 +15,9 @@ tables:
   - name: staging_solicitacao
     type: staging
     columns:
-      id_municip: varchar(7)     # IBGE preserva zeros à esquerda
+      id_municip: varchar(7)
       id_mn_resi: varchar(7)
-      sg_uf: char(2)             # "RJ", "SP", ...
+      sg_uf: char(2)
       uf: integer
       cs_sexo: char(1)
       nu_idade_n: integer
@@ -29,7 +29,22 @@ tables:
       dt_notific: date
       dt_sin_pri: date
       doenca: varchar(32)
-      ano: integer               # <<< era "date"
+      ano: integer
+
+      # >>> NOVAS COLUNAS PARA TABLE 1 <<<
+
+      cs_raca: integer        # raça/cor
+      cs_escol_n: integer     # escolaridade
+      cs_gestant: integer     # gestante (se quiser usar depois)
+
+      diabetes: integer
+      hematolog: integer
+      hepatopat: integer
+      renal: integer
+      hipertensa: integer
+      acido_pept: integer
+      auto_imune: integer
+           # <<< era "date"
     indexes:
       - [dt_notific]
       - [id_municip]
@@ -53,8 +68,22 @@ tables:
         dt_notific,
         dt_sin_pri,
         doenca,
-        ano
+        ano,
+
+        -- >>> NOVOS CAMPOS PARA TABLE 1 <<<
+        cs_raca,
+        cs_escol_n,
+        cs_gestant,
+        diabetes,
+        hematolog,
+        hepatopat,
+        renal,
+        hipertensa,
+        acido_pept,
+        auto_imune
+
       FROM {{schema}}.staging_solicitacao
+
 
 views:
   - name: vw_casos_diarios

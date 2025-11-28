@@ -12,11 +12,6 @@
 	"project_owner": "alasdari.wilson@dtc.ox.ac.uk",
 	"insight_panels_path": "insight_panels/",
 	"insight_panels": [
-			"enrolment_details",
-			"presentation_demogcomor",
-			"presentation_symptoms",
-			"lesion_assessment",
-   	 		"treatments_interventions",
-    		"outcomes_complications"
+			"table1"
 	]
 }
