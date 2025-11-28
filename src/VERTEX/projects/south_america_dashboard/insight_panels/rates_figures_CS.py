@@ -17,7 +17,7 @@ totais_ano = {
 def define_button():
     """Defines the button in the main dashboard menu"""
     button_item = "Rates"
-    button_label = "Main Rates"
+    button_label = "Dengue with Alarming Signs  Rates"
     output = {"item": button_item, "label": button_label}
     return output
 
@@ -85,61 +85,22 @@ def _load_taxas_dengue_ano(engine, ano: int) -> pd.DataFrame:
     df_plot["ano"] = df_plot["ano"].astype(str)
     return df_plot
 
-def _load_taxa_obito_ano(engine, ano: int) -> pd.DataFrame:
-    """
-    Calcula taxa de óbito por dengue por 100 mil notificações para um ano.
-    Numerador: casos com classi_fin em (10,11,12) e evolucao = 2 (óbito por dengue).
-    Denominador: total de registros em sinan.casos para o ano.
-    """
-    
-    sql = """
-        SELECT
-            %(ano)s::int AS ano,
-            COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12) AND evolucao = 2
-            ) AS obitos_dengue,
-            COUNT(*) AS total_notificacoes
-        FROM sinan.casos
-        WHERE ano = %(ano)s;
-    """
-
-    df = pd.read_sql(sql, engine, params={"ano": ano})
-    if df.empty:
-        return df
-
-    total = float(df["total_notificacoes"].iloc[0])
-    obitos = float(df["obitos_dengue"].iloc[0])
-
-    if total == 0:
-        taxa = 0.0
-    else:
-        total = totais_ano[str(ano)]
-        taxa = obitos / total * 100_000
-
-    df_plot = pd.DataFrame(
-        {
-            "ano": [str(ano)],
-            "Taxa de óbito": [taxa],
-        }
-    )
-    return df_plot
-
 def _load_taxa_hosp_dengue_ano(engine, ano: int) -> pd.DataFrame:
     """
     Taxa de hospitalização por dengue (%):
         hospitalizados / casos de dengue * 100
 
     - Casos de hospitalização por dengue: hospitaliz = 1
-    - Casos de dengue: classi_fin IN (10, 11, 12)
+    - Casos de dengue: classi_fin IN (11)
     """
     sql = """
         SELECT
             ano,
             COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12)
+                WHERE classi_fin IN (11)
             ) AS casos_dengue,
             COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12) AND hospitaliz = 1
+                WHERE classi_fin IN (11) AND hospitaliz = 1
             ) AS casos_hosp
         FROM sinan.casos
         WHERE ano = %(ano)s
@@ -165,7 +126,7 @@ def _load_taxa_letalidade_ano(engine, ano: int) -> pd.DataFrame:
     """
     Taxa de letalidade por dengue (%):
     - numerador: óbitos por dengue (evolucao = 2)
-    - denominador: casos de dengue (classi_fin IN (10, 11, 12))
+    - denominador: casos de dengue (classi_fin IN (11))
     fórmula: (obitos / casos_confirmados) * 100
     """
     
@@ -173,11 +134,11 @@ def _load_taxa_letalidade_ano(engine, ano: int) -> pd.DataFrame:
         SELECT
             ano,
             COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12)
+                WHERE classi_fin IN (11)
                   AND evolucao = 2
             ) AS obitos_dengue,
             COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12)
+                WHERE classi_fin IN (11)
             ) AS casos_dengue
         FROM sinan.casos
         WHERE ano = %(ano)s
@@ -189,6 +150,7 @@ def _load_taxa_letalidade_ano(engine, ano: int) -> pd.DataFrame:
     if df.empty:
         return df
 
+    # taxa de letalidade em %
     df["Taxa de letalidade (%)"] = df["obitos_dengue"] / df["casos_dengue"] * 100
 
     df_plot = df[["ano", "Taxa de letalidade (%)"]].copy()
@@ -208,16 +170,17 @@ def create_visuals(df_map, df_forms_dict, dictionary, quality_report, filepath, 
     if not anos:
         return tuple(visuals)
 
+
     dfs_casos = []
     for ano in anos:
         df_ano = _load_taxas_dengue_ano(engine, ano=ano)
         if not df_ano.empty:
-            dfs_casos.append(df_ano[["ano", "Casos Confirmado total"]])
+            dfs_casos.append(df_ano[["ano", "Com sinais de alarme"]])
 
     if dfs_casos:
         df_casos_all = pd.concat(dfs_casos, ignore_index=True)
         df_casos_all.rename(
-            columns={"Casos Confirmado total": "Taxa de casos confirmados"},
+            columns={"Com sinais de alarme": "Taxa de casos confirmados"},
             inplace=True,
         )
 
@@ -240,36 +203,7 @@ def create_visuals(df_map, df_forms_dict, dictionary, quality_report, filepath, 
         )
         visuals.append((fig_casos, gid_casos, glab_casos, gabout_casos))
 
-    
-    dfs_obito = []
-    for ano in anos:
-        df_ano = _load_taxa_obito_ano(engine, ano=ano)
-        if not df_ano.empty:
-            dfs_obito.append(df_ano)
 
-    if dfs_obito:
-        df_obito_all = pd.concat(dfs_obito, ignore_index=True)
-
-        fig_obito, gid_obito, glab_obito, gabout_obito = idw.fig_bar_chart(
-            data=df_obito_all,
-            title="Taxa de Óbito por Dengue por 100 mil hab.",
-            xlabel="Ano",
-            ylabel="Óbitos por 100 mil habitantes",
-            index_column="ano",
-            barmode="group",
-            xaxis_tickformat="",
-            suffix=f"{suffix}/taxa_obito_dengue_todos_anos",
-            filepath=filepath,
-            save_inputs=save_inputs,
-            graph_label="Taxa de óbito por dengue",
-            graph_about=(
-                "Taxa de óbitos por dengue por 100 mil habitantes, "
-                "para cada ano disponível, usando população anual como denominador."
-            ),
-        )
-        visuals.append((fig_obito, gid_obito, glab_obito, gabout_obito))
-
-    
     dfs_hosp = []
     for ano in anos:
         df_ano = _load_taxa_hosp_dengue_ano(engine, ano=ano)
@@ -292,7 +226,7 @@ def create_visuals(df_map, df_forms_dict, dictionary, quality_report, filepath, 
             save_inputs=save_inputs,
             graph_label="Taxa de hospitalização por dengue",
             graph_about=(
-                "Proporção de casos de dengue confirmados (classi_fin 10, 11, 12) "
+                "Proporção de casos de dengue confirmados (classi_fin 11) "
                 "que tiveram hospitalização (hospitaliz = 1), por ano."
             ),
         )
@@ -322,7 +256,7 @@ def create_visuals(df_map, df_forms_dict, dictionary, quality_report, filepath, 
             graph_label="Taxa de letalidade por dengue",
             graph_about=(
                 "Taxa de letalidade por dengue: óbitos por dengue (evolucao = 2) "
-                "divididos pelos casos confirmados (classi_fin IN 10, 11, 12), por ano."
+                "divididos pelos casos confirmados (classi_fin IN 11), por ano."
             ),
         )
         visuals.append((fig_letal, gid_letal, glab_letal, gabout_letal))

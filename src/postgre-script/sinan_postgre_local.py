@@ -72,7 +72,7 @@ def build_engine() -> Any:
 CONFIG_PATH = _here / "config_sinan.yaml"
 SCHEMA_TARGET = env("SCHEMA_TARGET", "sinan")
 
-INPUT_DBC = env("INPUT_DBC")
+INPUT_DBC = env("INPUT_DBC") + f"DENGBR{env("ANO")[2:4]}.dbc"
 DOENCA = env("DOENCA", "dengue")
 ANO = int(env("ANO", "2022"))
 

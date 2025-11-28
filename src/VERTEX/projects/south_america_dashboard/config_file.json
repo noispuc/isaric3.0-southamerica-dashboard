@@ -1,6 +1,6 @@
 {
 	"project_name": "South America Dashboard",
-"api_url": "https://ncov.medsci.ox.ac.uk/api/",
+    "api_url": "https://ncov.medsci.ox.ac.uk/api/",
 	"api_key": "825EE199496BE8F41B1CDBE335FBFB78",
 	"map_layout_center_latitude": 6,
 	"map_layout_center_longitude": -75,
@@ -11,9 +11,13 @@
 	"insight_panels_path": "insight_panels/",
 	"insight_panels": [
 		"rates_figures",
-        "arboviruses_rates_figures", 
-        "arboviruses_figures"
+		"rates_figures_SS",
+		"rates_figures_CS",
+		"rates_figures_G",
+		"rates_figures_age",
+		"age_mortality_risk_panel"
 	],
+
 	"data_access_groups": [
 		"00000-COL-Site1",
 		"00001-COL-Site2",
@@ -35,4 +39,5 @@
 		"00017-NLD-Site1",
 		"00018-NLD-Site2"
 	]
+
 }
