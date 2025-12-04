@@ -12,6 +12,6 @@
 	"project_owner": "alasdari.wilson@dtc.ox.ac.uk",
 	"insight_panels_path": "insight_panels/",
 	"insight_panels": [
-			"table1"
+			"table1","table2"
 	]
 }
