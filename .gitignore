@@ -80,3 +80,4 @@ src/postgre-script/config_sinan.yaml
 src/postgre-script/sinan.env
 
 src/VERTEX/core
+.DS_Store

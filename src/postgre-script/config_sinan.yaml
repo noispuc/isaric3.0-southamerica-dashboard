@@ -15,9 +15,9 @@ tables:
   - name: staging_solicitacao
     type: staging
     columns:
-      id_municip: varchar(7)     # IBGE preserva zeros à esquerda
+      id_municip: varchar(7)
       id_mn_resi: varchar(7)
-      sg_uf: char(2)             # "RJ", "SP", ...
+      sg_uf: char(2)
       uf: integer
       cs_sexo: char(1)
       nu_idade_n: integer
@@ -29,7 +29,21 @@ tables:
       dt_notific: date
       dt_sin_pri: date
       doenca: varchar(32)
-      ano: integer               # <<< era "date"
+      ano: integer
+
+      # >>> NOVAS COLUNAS PARA TABLE 1 <<<
+      cs_raca: integer        # raça/cor
+      cs_escol_n: integer     # escolaridade
+      cs_gestant: integer     # gestante
+
+      diabetes: integer
+      hematolog: integer
+      hepatopat: integer
+      renal: integer
+      hipertensa: integer
+      acido_pept: integer
+      auto_imune: integer
+
     indexes:
       - [dt_notific]
       - [id_municip]
@@ -53,8 +67,101 @@ tables:
         dt_notific,
         dt_sin_pri,
         doenca,
-        ano
+        ano,
+
+        -- 1) Classificação OMS (igual ao paper: 10, 11, 12)
+        CASE
+          WHEN classi_fin IN (10, 11, 12) THEN classi_fin
+          ELSE NULL
+        END AS reclass_dengue_oms_v2,
+
+        -- 2) Faixa etária (faixa_etaria), usando código 4000+ anos do SINAN
+        CASE
+          WHEN nu_idade_n BETWEEN 4000 AND 4004 THEN '0–4'
+          WHEN nu_idade_n BETWEEN 4005 AND 4009 THEN '5–9'
+          WHEN nu_idade_n BETWEEN 4010 AND 4014 THEN '10–14'
+          WHEN nu_idade_n BETWEEN 4015 AND 4019 THEN '15–19'
+          WHEN nu_idade_n BETWEEN 4020 AND 4029 THEN '20–29'
+          WHEN nu_idade_n BETWEEN 4030 AND 4039 THEN '30–39'
+          WHEN nu_idade_n BETWEEN 4040 AND 4049 THEN '40–49'
+          WHEN nu_idade_n BETWEEN 4050 AND 4059 THEN '50–59'
+          WHEN nu_idade_n BETWEEN 4060 AND 4069 THEN '60–69'
+          WHEN nu_idade_n BETWEEN 4070 AND 4079 THEN '70–79'
+          WHEN nu_idade_n >= 4080 THEN '80+'
+          ELSE 'Ignorado'
+        END AS faixa_etaria,
+
+        -- 3) Ano e mês da primeira data de sintomas
+        EXTRACT(YEAR  FROM dt_sin_pri)::int  AS ano_sin_pri,
+        EXTRACT(MONTH FROM dt_sin_pri)::int  AS mes_pri_sint,
+
+        -- 4) Região de residência (REG_RES) derivada da UF
+        CASE
+          WHEN sg_uf IN ('11','12','13','14','15','16','17') THEN 'Norte'
+          WHEN sg_uf IN ('21','22','23','24','25','26','27') THEN 'Nordeste'
+          WHEN sg_uf IN ('31','32','33','35')               THEN 'Sudeste'
+          WHEN sg_uf IN ('41','42','43')                    THEN 'Sul'
+          WHEN sg_uf IN ('50','51','52','53')               THEN 'Centro-Oeste'
+          ELSE 'Ignorado'
+        END AS reg_res,
+
+        -- 5) Variáveis brutas usadas na Tabela 1
+        cs_raca,
+        cs_escol_n,
+        cs_gestant,
+        diabetes,
+        hematolog,
+        hepatopat,
+        renal,
+        hipertensa,
+        acido_pept,
+        auto_imune,
+
+        -- 6) Número de comorbidades (contagem simples)
+        (
+          COALESCE(CASE WHEN diabetes   = 1 THEN 1 ELSE 0 END, 0) +
+          COALESCE(CASE WHEN hematolog  = 1 THEN 1 ELSE 0 END, 0) +
+          COALESCE(CASE WHEN hepatopat  = 1 THEN 1 ELSE 0 END, 0) +
+          COALESCE(CASE WHEN renal      = 1 THEN 1 ELSE 0 END, 0) +
+          COALESCE(CASE WHEN hipertensa = 1 THEN 1 ELSE 0 END, 0) +
+          COALESCE(CASE WHEN acido_pept = 1 THEN 1 ELSE 0 END, 0) +
+          COALESCE(CASE WHEN auto_imune = 1 THEN 1 ELSE 0 END, 0)
+        ) AS n_comorb,
+
+        -- 7) Rótulo de comorbidades (0, 1, 2, >=3) para usar como "comorbidade_label"
+        CASE
+          WHEN (
+            COALESCE(CASE WHEN diabetes   = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hematolog  = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hepatopat  = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN renal      = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hipertensa = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN acido_pept = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN auto_imune = 1 THEN 1 ELSE 0 END, 0)
+          ) = 0 THEN '0'
+          WHEN (
+            COALESCE(CASE WHEN diabetes   = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hematolog  = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hepatopat  = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN renal      = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hipertensa = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN acido_pept = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN auto_imune = 1 THEN 1 ELSE 0 END, 0)
+          ) = 1 THEN '1'
+          WHEN (
+            COALESCE(CASE WHEN diabetes   = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hematolog  = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hepatopat  = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN renal      = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN hipertensa = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN acido_pept = 1 THEN 1 ELSE 0 END, 0) +
+            COALESCE(CASE WHEN auto_imune = 1 THEN 1 ELSE 0 END, 0)
+          ) = 2 THEN '2'
+          ELSE '>=3'
+        END AS comorbidade_label
+
       FROM {{schema}}.staging_solicitacao
+
 
 views:
   - name: vw_casos_diarios
@@ -75,6 +182,7 @@ views:
           id_municip,
           COUNT(*) AS casos
         FROM {{schema}}.casos
+        WHERE reclass_dengue_oms_v2 IN (10, 11, 12)   -- só casos confirmados
         GROUP BY 1,2
       )
       SELECT s.semana,
@@ -91,7 +199,7 @@ views:
         SELECT
           dt_notific::date AS data,
           id_municip,
-          CASE WHEN classi_fin IN (10,11,12) THEN 1 ELSE 0 END AS caso_confirmado,
+          CASE WHEN reclass_dengue_oms_v2 IN (10, 11, 12) THEN 1 ELSE 0 END AS caso_confirmado,
           CASE WHEN hospitaliz = 1 THEN 1 ELSE 0 END AS hospitalizado
         FROM {{schema}}.casos
       )
@@ -106,12 +214,13 @@ views:
         SELECT
           dt_notific::date AS data,
           id_municip,
-          CASE WHEN classi_fin IN (10,11,12) THEN 1 ELSE 0 END AS caso_confirmado,
-          CASE WHEN evolucao IN (1) THEN 1 ELSE 0 END AS obito   -- ajuste os códigos conforme seu dicionário
+          CASE WHEN reclass_dengue_oms_v2 IN (10, 11, 12) THEN 1 ELSE 0 END AS caso_confirmado,
+          -- ajuste o código de óbito por dengue conforme o seu dicionário SINAN (aqui uso 2 como óbito por dengue)
+          CASE WHEN evolucao = 2 THEN 1 ELSE 0 END AS obito_dengue
         FROM {{schema}}.casos
       )
       SELECT data, id_municip,
-             100.0 * SUM(obito)::numeric / NULLIF(SUM(caso_confirmado),0) AS taxa_letalidade_percent
+             100.0 * SUM(obito_dengue)::numeric / NULLIF(SUM(caso_confirmado),0) AS taxa_letalidade_percent
       FROM base
       GROUP BY 1,2
 
@@ -121,15 +230,16 @@ views:
         SELECT
           dt_notific::date AS data,
           id_municip,
-          CASE WHEN evolucao IN (1) THEN 1 ELSE 0 END AS obito
+          -- mesmo código de óbito por dengue usado acima
+          CASE WHEN evolucao = 2 THEN 1 ELSE 0 END AS obito_dengue
         FROM {{schema}}.casos
       )
       SELECT
         data,
         id_municip,
-        SUM(obito) AS obitos,
+        SUM(obito_dengue) AS obitos,
         p.pop AS populacao,
-        (SUM(obito)::numeric / NULLIF(p.pop,0)) * 100000 AS obitos_100k
+        (SUM(obito_dengue)::numeric / NULLIF(p.pop,0)) * 100000 AS obitos_100k
       FROM d
       LEFT JOIN aux.pop_municipios p USING (id_municip)
       GROUP BY 1,2,4

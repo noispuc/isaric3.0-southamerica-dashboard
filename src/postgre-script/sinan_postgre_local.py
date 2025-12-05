@@ -72,7 +72,7 @@ def build_engine() -> Any:
 CONFIG_PATH = _here / "config_sinan.yaml"
 SCHEMA_TARGET = env("SCHEMA_TARGET", "sinan")
 
-INPUT_DBC = env("INPUT_DBC") + f"DENGBR{env("ANO")[2:4]}.dbc"
+INPUT_DBC = env("INPUT_DBC")
 DOENCA = env("DOENCA", "dengue")
 ANO = int(env("ANO", "2022"))
 
@@ -517,7 +517,22 @@ expected_cols = {
     "id_agravo": None,
     "dt_notific": None,
     "dt_sin_pri": None,
+
+    # >>> NOVOS CAMPOS PARA TABLE 1 <<<
+
+    "cs_raca": None,
+    "cs_escol_n": None,
+    "cs_gestant": None,
+
+    "diabetes": None,
+    "hematolog": None,
+    "hepatopat": None,
+    "renal": None,
+    "hipertensa": None,
+    "acido_pept": None,
+    "auto_imune": None,
 }
+
 for c in expected_cols:
     if c not in df.columns:
         df[c] = pd.NA
@@ -542,7 +557,16 @@ df["doenca"] = DOENCA
 df["ano"] = int(ANO)
 
 # Sanitização de tipos p/ colunas numéricas -> evita "" em INTEGER
-_numeric_cols = ["uf", "nu_idade_n", "classi_fin", "evolucao", "hospitaliz", "tp_not", "ano"]
+_numeric_cols = [
+    "uf", "nu_idade_n", "classi_fin", "evolucao",
+    "hospitaliz", "tp_not", "ano",
+
+    # novos numéricos:
+    "cs_raca", "cs_escol_n", "cs_gestant",
+    "diabetes", "hematolog", "hepatopat",
+    "renal", "hipertensa", "acido_pept", "auto_imune",
+]
+
 for col in _numeric_cols:
     if col in df.columns:
         df[col] = (
