@@ -1,11 +1,13 @@
+'''
+FINAL
+'''
+
 import os
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
 import plotly.graph_objects as go
-
-# opcional, mantém consistência com o resto do projeto
-import vertex.IsaricDraw as idw   # mesmo se não usarmos diretamente
+import vertex.IsaricDraw as idw
 
 
 def define_button():
@@ -56,15 +58,15 @@ def _load_mortality_curve_by_age(engine) -> pd.DataFrame:
         SELECT
             FLOOR(idade_anos)::int AS idade,
             COUNT(*) FILTER (
-                WHERE classi_fin IN (10,11,12)
+                WHERE classi_fin IN 12)
             ) AS casos_confirmados,
             COUNT(*) FILTER (
-                WHERE classi_fin IN (10,11,12) AND evolucao = 2
+                WHERE classi_fin IN (12) AND evolucao = 2
             ) AS obitos_dengue
         FROM base
         WHERE idade_anos IS NOT NULL
         GROUP BY FLOOR(idade_anos)
-        HAVING COUNT(*) FILTER (WHERE classi_fin IN (10,11,12)) >= 30  -- evita idades com pouca amostra
+        HAVING COUNT(*) FILTER (WHERE classi_fin IN (12)) >= 30  -- evita idades com pouca amostra
         ORDER BY idade;
     """
 
@@ -78,6 +80,10 @@ def _load_mortality_curve_by_age(engine) -> pd.DataFrame:
 
     # risco bruto
     df["risk"] = df["obitos_dengue"] / df["casos_confirmados"]
+
+    # regressao
+    # y = obitos
+    # x = [idade (valor)]
 
     # intervalo de confiança binomial aproximado (normal)
     z = 1.96

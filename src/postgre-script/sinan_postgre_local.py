@@ -1,13 +1,11 @@
 import os
 import sys
+import subprocess
 import tempfile
 import itertools
 import warnings
 from typing import Any, Dict, List
 
-# -----------------------------
-# .env loader (aceita .env, sinan.env, config.env ao lado do script)
-# -----------------------------
 try:
     from dotenv import load_dotenv  # type: ignore
     from pathlib import Path
@@ -72,7 +70,7 @@ def build_engine() -> Any:
 CONFIG_PATH = _here / "config_sinan.yaml"
 SCHEMA_TARGET = env("SCHEMA_TARGET", "sinan")
 
-INPUT_DBC = env("INPUT_DBC")
+INPUT_DBC = env("INPUT_DBC") + f"DENGBR{env("ANO")[2:4]}.dbc"
 DOENCA = env("DOENCA", "dengue")
 ANO = int(env("ANO", "2022"))
 
@@ -487,10 +485,13 @@ def ensure_aux_pop_table() -> None:
 # Extract → Transform (light) → Load (staging)
 # -----------------------------
 print(f"Lendo: {INPUT_DBC}  ({DOENCA}, {ANO}) | SAMPLE_ROWS={SAMPLE_ROWS}")
+dbf_path = env("INPUT_DBC") + f"DENGBR{env("ANO")[2:4]}.dbf"
 
 with tempfile.TemporaryDirectory() as tmp:
-    dbf_path = os.path.join(tmp, os.path.splitext(os.path.basename(INPUT_DBC))[0] + ".dbf")
-    datasus_dbc.decompress(INPUT_DBC, dbf_path)
+    #dbf_path = os.path.join(tmp, os.path.splitext(os.path.basename(INPUT_DBC))[0] + ".dbf")
+    #datasus_dbc.decompress(INPUT_DBC, dbf_path)
+    #INPUT_DBC_TMP = "D:\\repos" + INPUT_DBC[8:]
+    #result = subprocess.run([r"D:\DATASUS\TABWIN415\dbf2dbc.exe", INPUT_DBC_TMP])
 
     table = DBF(dbf_path, encoding=source_encoding)
     if SAMPLE_ROWS is None:
