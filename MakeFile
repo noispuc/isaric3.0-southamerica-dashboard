@@ -36,7 +36,17 @@ clean-all:
 	@echo "Cleanup completed!"
 
 open-sql:
-	psql -h localhost -p 5432 postgres
+	psql -h localhost -p 5432 -U postgres -d datasus
+
+see-sql-years:
+	SET search_path TO sinan;
+	SELECT ano, COUNT(*) 
+	FROM casos
+	GROUP BY ano
+	ORDER BY ano;
+
+see-all-years-in-years:
+	SELECT EXTRACT(YEAR FROM dt_notific) AS ano_dt, COUNT(*) FROM casos WHERE ano = 2017 GROUP BY EXTRACT(YEAR FROM dt_notific) ORDER BY ano_dt;
 
 enter-docker:
 	docker exec -it vertex sh

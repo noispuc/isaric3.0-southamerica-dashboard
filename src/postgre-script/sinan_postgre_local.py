@@ -1,13 +1,11 @@
 import os
 import sys
+import subprocess
 import tempfile
 import itertools
 import warnings
 from typing import Any, Dict, List
 
-# -----------------------------
-# .env loader (aceita .env, sinan.env, config.env ao lado do script)
-# -----------------------------
 try:
     from dotenv import load_dotenv  # type: ignore
     from pathlib import Path
@@ -72,7 +70,7 @@ def build_engine() -> Any:
 CONFIG_PATH = _here / "config_sinan.yaml"
 SCHEMA_TARGET = env("SCHEMA_TARGET", "sinan")
 
-INPUT_DBC = env("INPUT_DBC")
+INPUT_DBC = env("INPUT_DBC") + f"DENGBR{env("ANO")[2:4]}.dbc"
 DOENCA = env("DOENCA", "dengue")
 ANO = int(env("ANO", "2022"))
 
@@ -487,10 +485,13 @@ def ensure_aux_pop_table() -> None:
 # Extract → Transform (light) → Load (staging)
 # -----------------------------
 print(f"Lendo: {INPUT_DBC}  ({DOENCA}, {ANO}) | SAMPLE_ROWS={SAMPLE_ROWS}")
+dbf_path = env("INPUT_DBC") + f"DENGBR{env("ANO")[2:4]}.dbf"
 
 with tempfile.TemporaryDirectory() as tmp:
-    dbf_path = os.path.join(tmp, os.path.splitext(os.path.basename(INPUT_DBC))[0] + ".dbf")
-    datasus_dbc.decompress(INPUT_DBC, dbf_path)
+    #dbf_path = os.path.join(tmp, os.path.splitext(os.path.basename(INPUT_DBC))[0] + ".dbf")
+    #datasus_dbc.decompress(INPUT_DBC, dbf_path)
+    #INPUT_DBC_TMP = "D:\\repos" + INPUT_DBC[8:]
+    #result = subprocess.run([r"D:\DATASUS\TABWIN415\dbf2dbc.exe", INPUT_DBC_TMP])
 
     table = DBF(dbf_path, encoding=source_encoding)
     if SAMPLE_ROWS is None:
@@ -517,7 +518,22 @@ expected_cols = {
     "id_agravo": None,
     "dt_notific": None,
     "dt_sin_pri": None,
+
+    # >>> NOVOS CAMPOS PARA TABLE 1 <<<
+
+    "cs_raca": None,
+    "cs_escol_n": None,
+    "cs_gestant": None,
+
+    "diabetes": None,
+    "hematolog": None,
+    "hepatopat": None,
+    "renal": None,
+    "hipertensa": None,
+    "acido_pept": None,
+    "auto_imune": None,
 }
+
 for c in expected_cols:
     if c not in df.columns:
         df[c] = pd.NA
@@ -542,7 +558,16 @@ df["doenca"] = DOENCA
 df["ano"] = int(ANO)
 
 # Sanitização de tipos p/ colunas numéricas -> evita "" em INTEGER
-_numeric_cols = ["uf", "nu_idade_n", "classi_fin", "evolucao", "hospitaliz", "tp_not", "ano"]
+_numeric_cols = [
+    "uf", "nu_idade_n", "classi_fin", "evolucao",
+    "hospitaliz", "tp_not", "ano",
+
+    # novos numéricos:
+    "cs_raca", "cs_escol_n", "cs_gestant",
+    "diabetes", "hematolog", "hepatopat",
+    "renal", "hipertensa", "acido_pept", "auto_imune",
+]
+
 for col in _numeric_cols:
     if col in df.columns:
         df[col] = (

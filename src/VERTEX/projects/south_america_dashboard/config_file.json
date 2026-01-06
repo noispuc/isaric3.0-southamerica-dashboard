@@ -8,15 +8,14 @@
 	"save_public_outputs": false,
 	"save_filtered_public_outputs": false,
 	"public_path": "PUBLIC/",
-	"is_public": false,
-	"project_owner": "alasdari.wilson@dtc.ox.ac.uk",
 	"insight_panels_path": "insight_panels/",
 	"insight_panels": [
-			"enrolment_details",
-			"presentation_demogcomor",
-			"presentation_symptoms",
-			"lesion_assessment",
-   	 		"treatments_interventions",
-    		"outcomes_complications"
+		"rates_figures",
+		"rates_figures_SS",
+		"rates_figures_CS",
+		"rates_figures_G",
+		"rates_figures_age",
+		"age_mortality_risk_panel",
+		"table1","table2"
 	]
 }
