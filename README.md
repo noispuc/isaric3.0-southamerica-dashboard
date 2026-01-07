@@ -1,7 +1,8 @@
-# 📦 ISARIC HUB SA Template - Repositório de Referência Técnica
+# 📦 ISARIC HUB SA - South America Arboviroses Dashboard
 
-Este repositório serve como exemplo **didático e técnico** da estrutura padrão adotada pelos projetos da organização NOIS.
-Atualize o readme para reflita as informações corretas do projeto.
+This repository contains the source code related to South America Dashboard, a statistic visual tool based on VERTEX (ISARIC) containing data arboviroses surveillance system from South America. 
+The following database are integrated:
+- SINAN - Brazil.
 
 ## 🧠 O que você encontra aqui:
 - Estrutura de diretórios
@@ -11,7 +12,6 @@ Atualize o readme para reflita as informações corretas do projeto.
 - Padrões de `.env`, `.gitignore`, `pyproject.toml`, etc.
 - Checklist de limpeza para novos projetos
 
-Ao criar um novo projeto, use este repositório como **template** e ajuste conforme necessário.
 
 ## 📦 Estrutura
 
