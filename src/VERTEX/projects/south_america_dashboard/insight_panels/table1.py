@@ -8,6 +8,10 @@ from sqlalchemy import create_engine, text
 
 import vertex.IsaricDraw as idw
 
+from dotenv import load_dotenv
+
+# Carrega variáveis do arquivo .env (na raiz ou no diretório atual/pai)
+load_dotenv()
 
 # ----------------------------------------------------------------------
 # Botão no menu do dashboard
@@ -20,20 +24,40 @@ def define_button():
 # Conexão e carga da VIEW
 # ----------------------------------------------------------------------
 def _get_engine_from_env():
-    user = os.getenv("PGUSER", "postgres")
-    password = os.getenv("PGPASSWORD", "benech")  # fallback
-
-    host_env = os.getenv("PGHOST", "host.docker.internal")
-    host = "host.docker.internal" if host_env in ("localhost", "127.0.0.1") else host_env
-
+    """
+    Usa apenas variáveis de ambiente para montar a URL de conexão.
+    As variáveis devem estar definidas no .env (carregado via load_dotenv)
+    ou diretamente no ambiente.
+    """
+    user = os.getenv("PGUSER")
+    password = os.getenv("PGPASSWORD")
+    host = os.getenv("PGHOST", "host.docker.internal")
     port = os.getenv("PGPORT", "5432")
-    db = os.getenv("PGDATABASE", "datasus")
+    db = os.getenv("PGDATABASE")
+
+    missing = [name for name, val in [
+        ("PGUSER", user),
+        ("PGPASSWORD", password),
+        ("PGDATABASE", db),
+    ] if not val]
+
+    if missing:
+        raise RuntimeError(
+            "Variáveis de ambiente do banco não configuradas. "
+            f"Faltando: {', '.join(missing)}. "
+            "Defina-as no arquivo .env ou no ambiente antes de rodar o dashboard."
+        )
+
+    # se host for localhost/127.0.0.1 dentro do Docker, redireciona pra host.docker.internal
+    if host in ("localhost", "127.0.0.1"):
+        host = "host.docker.internal"
 
     url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db}"
     safe_url = f"postgresql+psycopg2://{user}:*****@{host}:{port}/{db}"
     print("[TABLE1] Conectando ao Postgres com URL:", safe_url, flush=True)
 
     return create_engine(url, pool_pre_ping=True)
+
 
 
 def _load_sinan_view(year: int = 2024) -> pd.DataFrame:
