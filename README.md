@@ -50,6 +50,7 @@ Após criar seu repositório a partir deste template:
 - [ ] Revisar `README.md` com a descrição específica do projeto
 - [ ] Validar dependências e versões no `requirements.txt`
 
+```
 ## 🔐 Credenciais do banco de dados (PostgreSQL) e uso de .env
 
 Os scripts que acessam o banco  não devem ter usuário/senha escritos diretamente no código.
@@ -67,26 +68,26 @@ PGPORT – porta do banco (padrão: 5432)
 
 PGDATABASE – nome do banco (ex.: datasus)
 
-💻 Desenvolvimento local 
+### 💻 Desenvolvimento local 
 
 Crie um arquivo .env na sua máquina 
 
 Preencha com as variáveis do seu ambiente, por exemplo:
-
+```bash
 PGUSER=seu_usuario_postgres
 PGPASSWORD=sua_senha_postgres
 PGHOST=localhost
 PGPORT=5432
 PGDATABASE=datasus
-
+```
 
 Certifique-se de que o arquivo .env não será commitado.
 No .gitignore do projeto devem existir entradas semelhantes a:
 
-# Arquivos reais de credenciais (não versionar)
+```bash
 .env
 *.env
-
+```
 
 Ao rodar os scripts / dashboard, o processo irá ler essas variáveis de ambiente e montar a conexão com o banco automaticamente.
 
