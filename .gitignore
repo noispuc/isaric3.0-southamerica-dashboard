@@ -64,6 +64,7 @@ site/
 *.sublime-workspace
 
 # 🔑 Secrets e configurações locais
+*.env
 .env
 *.env.*
 .envrc

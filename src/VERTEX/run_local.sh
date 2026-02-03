@@ -2,6 +2,16 @@
 IMAGE_NAME="vertex"
 PORT=8050
 WORKDIR="/app"
+ENV_FILE="../../sinan.env"
+
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  source "$ENV_FILE"
+  set +a
+else
+  echo "ERRO: arquivo $ENV_FILE não encontrado" >&2
+  exit 1
+fi
 
 echo "🐳 Checking if Docker image '$IMAGE_NAME' exists..."
 
@@ -20,9 +30,9 @@ docker run --rm \
   -v "$(pwd)":$WORKDIR \
   -p $PORT:$PORT \
   -w $WORKDIR \
-  -e PGHOST="host.docker.internal" \
-  -e PGPORT="5432" \
-  -e PGUSER="postgres" \
-  -e PGPASSWORD="root" \
-  -e PGDATABASE="datasus" \
+  -e PGUSER=$PGUSER \
+  -e PGHOST=$PGHOST \
+  -e PGPORT=$PGPORT \
+  -e PGPASSWORD=$PGPASSWORD \
+  -e PGDATABASE=$PGDATABASE \
   -t $IMAGE_NAME
