@@ -4,23 +4,9 @@ from sqlalchemy import create_engine
 
 import vertex.IsaricDraw as idw
 
-totais_ano = {
-        "2017": 204_703_445,
-        "2018": 206_107_260,
-        "2019": 207_455_459,
-        "2020": 208_660_842,
-        "2021": 209_550_294,
-        "2022": 210_306_414,
-        "2023": 211_140_729,
-    }
-
-def define_button():
-    """Defines the button in the main dashboard menu"""
-    button_item = "Rates"
-    button_label = "Main Rates"
-    output = {"item": button_item, "label": button_label}
-    return output
-
+#################
+# SQL FUNCTIONS #
+#################
 def _get_anos_disponiveis(engine) -> list[int]:
     """
     Lê os anos disponíveis na tabela sinan.casos.
@@ -48,40 +34,29 @@ def _load_taxas_dengue_ano(engine, ano: int) -> pd.DataFrame:
     """
     
     sql = """
-        WITH base AS (
-            SELECT
-                ano,
-                COUNT(*) AS total_notificacoes,
-                COUNT(*) FILTER (WHERE classi_fin IN (10, 11, 12)) AS casos_confirmados_total,
-                COUNT(*) FILTER (WHERE classi_fin = 10)            AS casos_sem_sinais,
-                COUNT(*) FILTER (WHERE classi_fin = 11)            AS casos_com_sinais,
-                COUNT(*) FILTER (WHERE classi_fin = 12)            AS casos_graves
-            FROM sinan.casos
-            WHERE ano = %(ano)s
-            GROUP BY ano
-        )
-        SELECT
-            ano,
-            total_notificacoes,
-            casos_confirmados_total,
-            casos_sem_sinais,
-            casos_com_sinais,
-            casos_graves
-        FROM base;
+        SELECT ano, classi_bucket, incidencia_100k
+        FROM sinan.vw_dengue_incidencia_100k
+        WHERE ano = %(ano)s
+        AND classi_bucket IN ('10', '11', '12', '10_11_12')
     """
-
     df = pd.read_sql(sql, engine, params={"ano": ano})
     if df.empty:
         return df
 
-    total = float(df["total_notificacoes"].iloc[0])
+    wide = (
+        df.pivot(index="ano", columns="classi_bucket", values="incidencia_100k")
+        .reset_index()
+        .fillna(0)
+    )
 
-    df["Sem sinais de alarme"] = (df["casos_sem_sinais"] / totais_ano[str(ano)]) * 100_000
-    df["Com sinais de alarme"] = (df["casos_com_sinais"] / totais_ano[str(ano)]) * 100_000
-    df["Dengue grave"]         = (df["casos_graves"]     / totais_ano[str(ano)]) * 100_000
-    df["Casos Confirmado total"] = (df["casos_confirmados_total"] / totais_ano[str(ano)]) * 100_000
+    wide.rename(columns={
+        "10": "Sem sinais de alarme",
+        "11": "Com sinais de alarme",
+        "12": "Dengue grave",
+        "10_11_12": "Casos Confirmado total",
+    }, inplace=True)
 
-    df_plot = df[["ano", "Sem sinais de alarme", "Com sinais de alarme", "Dengue grave", "Casos Confirmado total"]].copy()
+    df_plot = wide[["ano", "Sem sinais de alarme", "Com sinais de alarme", "Dengue grave", "Casos Confirmado total"]].copy()
     df_plot["ano"] = df_plot["ano"].astype(str)
     return df_plot
 
@@ -93,36 +68,19 @@ def _load_taxa_obito_ano(engine, ano: int) -> pd.DataFrame:
     """
     
     sql = """
-        SELECT
-            %(ano)s::int AS ano,
-            COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12) AND evolucao = 2
-            ) AS obitos_dengue,
-            COUNT(*) AS total_notificacoes
-        FROM sinan.casos
-        WHERE ano = %(ano)s;
+        SELECT ano, taxa_mortalidade_100k
+        FROM sinan.vw_dengue_mortalidade_100k
+        WHERE ano = %(ano)s
+        AND classi_bucket = '10_11_12'
     """
-
     df = pd.read_sql(sql, engine, params={"ano": ano})
     if df.empty:
         return df
 
-    total = float(df["total_notificacoes"].iloc[0])
-    obitos = float(df["obitos_dengue"].iloc[0])
-
-    if total == 0:
-        taxa = 0.0
-    else:
-        total = totais_ano[str(ano)]
-        taxa = obitos / total * 100_000
-
-    df_plot = pd.DataFrame(
-        {
-            "ano": [str(ano)],
-            "Taxa de óbito": [taxa],
-        }
-    )
-    return df_plot
+    return pd.DataFrame({
+        "ano": [str(int(df["ano"].iloc[0]))],
+        "Taxa de óbito": [float(df["taxa_mortalidade_100k"].iloc[0])],
+    })
 
 def _load_taxa_hosp_dengue_ano(engine, ano: int) -> pd.DataFrame:
     """
@@ -132,33 +90,21 @@ def _load_taxa_hosp_dengue_ano(engine, ano: int) -> pd.DataFrame:
     - Casos de hospitalização por dengue: hospitaliz = 1
     - Casos de dengue: classi_fin IN (10, 11, 12)
     """
+    
     sql = """
-        SELECT
-            ano,
-            COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12)
-            ) AS casos_dengue,
-            COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12) AND hospitaliz = 1
-            ) AS casos_hosp
-        FROM sinan.casos
+        SELECT ano, taxa_hospitalizacao_pct
+        FROM sinan.vw_dengue_hospitalizacao_porcent
         WHERE ano = %(ano)s
-        GROUP BY ano
-        ORDER BY ano;
+        AND classi_bucket = '10_11_12'
     """
-
     df = pd.read_sql(sql, engine, params={"ano": ano})
-
     if df.empty:
         return df
 
-    df["Taxa de hospitalização (%)"] = (
-        df["casos_hosp"] / df["casos_dengue"]
-    ) * 100.0
-
-    df_plot = df[["ano", "Taxa de hospitalização (%)"]].copy()
-    df_plot["ano"] = df_plot["ano"].astype(str)
-
+    df_plot = pd.DataFrame({
+        "ano": df["ano"].astype(str),
+        "Taxa de hospitalização (%)": df["taxa_hospitalizacao_pct"].astype(float),
+    })
     return df_plot
 
 def _load_taxa_letalidade_ano(engine, ano: int) -> pd.DataFrame:
@@ -170,31 +116,30 @@ def _load_taxa_letalidade_ano(engine, ano: int) -> pd.DataFrame:
     """
     
     sql = """
-        SELECT
-            ano,
-            COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12)
-                  AND evolucao = 2
-            ) AS obitos_dengue,
-            COUNT(*) FILTER (
-                WHERE classi_fin IN (10, 11, 12)
-            ) AS casos_dengue
-        FROM sinan.casos
+        SELECT ano, taxa_letalidade_pct
+        FROM sinan.vw_dengue_letalidade_porcent
         WHERE ano = %(ano)s
-        GROUP BY ano
-        ORDER BY ano;
+        AND classi_bucket = '10_11_12'
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})
-
     if df.empty:
         return df
 
-    df["Taxa de letalidade (%)"] = df["obitos_dengue"] / df["casos_dengue"] * 100
-
-    df_plot = df[["ano", "Taxa de letalidade (%)"]].copy()
-    df_plot["ano"] = df_plot["ano"].astype(str)
-
+    df_plot = pd.DataFrame({
+        "ano": df["ano"].astype(str),
+        "Taxa de letalidade (%)": df["taxa_letalidade_pct"].astype(float),
+    })
     return df_plot
+
+####################
+# VERTEX FUNCTIONS #
+####################
+def define_button():
+    """Defines the button in the main dashboard menu"""
+    button_item = "Rates"
+    button_label = "Main Rates"
+    output = {"item": button_item, "label": button_label}
+    return output
 
 
 def create_visuals(df_map, df_forms_dict, dictionary, quality_report, filepath, suffix, save_inputs):
