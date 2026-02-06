@@ -14,5 +14,5 @@ COPY . .
 
 EXPOSE 8050
 
-CMD ["gunicorn", "--workers", "1","--reload", "--bind", "0.0.0.0:8050", "vertex.descriptive_dashboard:server"]
+CMD ["gunicorn", "--workers", "1", "--reload", "--timeout", "300", "--graceful-timeout", "300", "--bind", "0.0.0.0:8050", "vertex.descriptive_dashboard:server"]
 #CMD ["gunicorn", "--workers", "1","--reload", "--bind", "0.0.0.0:8050", "descriptive_dashboard:server"]
