@@ -75,12 +75,6 @@ secrets.yml
 # 🎯 GitHub Actions temporários
 *.log
 workflow-temp/
-
 datas/
-src/postgre-script/config_sinan.yaml
-src/postgre-script/sinan.env
-
 src/VERTEX/core
 .DS_Store
-
-projecoes_2024_tab1_idade_simples.*
