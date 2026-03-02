@@ -77,6 +77,9 @@ def load_vertex_data(project_path, config_dict):
     else:
         logger.info(f"Loading data from {project_path}")
         df_map, df_forms_dict, dictionary, quality_report = load_vertex_from_files(project_path, config_dict)
+        quality_report = ""
+        dictionary = ""
+        df_forms_dict = ""
     return df_map, df_forms_dict, dictionary, quality_report
 
 

@@ -1,0 +1,105 @@
+{'presentation':           subjid                                      inclu_disease inclu_disease_otherl3 inclu_case  ... preg_delvdate preg_gesweekout preg_bbtest preg_bbresl
+0    00000-00001  Human immunodeficiency virus infection (HIV in...                   NaN  Discarded  ...    2025-08-02            91.4       False         NaN
+1    00000-00002                                                NaN                   NaN  Discarded  ...           NaT             NaN         NaN         NaN
+2    00000-00003  Human immunodeficiency virus infection (HIV in...                   NaN  Discarded  ...    2025-08-04            71.7        True    Negative
+3    00000-00004                             Chickenpox (Varicella)                   NaN  Suspected  ...           NaT             NaN         NaN         NaN
+4    00000-00005                                               Mpox                   NaN  Suspected  ...           NaT             NaN         NaN         NaN
+..           ...                                                ...                   ...        ...  ...           ...             ...         ...         ...
+995  00017-00005  Human immunodeficiency virus infection (HIV in...                   NaN   Probable  ...           NaT             NaN         NaN         NaN
+996  00017-00006                             Chickenpox (Varicella)                   NaN  Suspected  ...    2025-08-08            33.8       False         NaN
+997  00017-00007  Human immunodeficiency virus infection (HIV in...                   NaN  Discarded  ...           NaT             NaN         NaN         NaN
+998  00017-00008                                              Other            lrnbqwwenk   Probable  ...    2025-08-07             NaN       False         NaN
+999  00017-00009               Herpes simplex virus infection (HSV)                   NaN  Discarded  ...           NaT             NaN         NaN         NaN
+
+[1000 rows x 348 columns], 'daily':            subjid daily_date daily_date                               asses_lvlcare vital_dailydata  ...  labs_protein labs_protein_units  imagi_dailydata  imagi_xray  imagi_xray_result
+0     00000-00001 2025-08-03 2025-08-03                             High dependency            True  ...          62.7                g/L             True         NaN                NaN
+1     00000-00002 2025-08-07 2025-08-07                    Intensive care admission            True  ...           NaN                NaN            False         NaN                NaN
+2     00000-00003 2025-08-04 2025-08-04  Admitted to normal ward for isolation only            True  ...           NaN                NaN            False         NaN                NaN
+3     00000-00003 2025-08-02 2025-08-02                             High dependency            True  ...          63.7                g/L             True         NaN                NaN
+4     00000-00003 2025-08-05 2025-08-05                             High dependency           False  ...          91.4               g/dL             True       False                NaN
+...           ...        ...        ...                                         ...             ...  ...           ...                ...              ...         ...                ...
+2002  00017-00007 2025-08-01 2025-08-01                                         NaN           False  ...           NaN               g/dL             True       False                NaN
+2003  00017-00007 2025-08-07 2025-08-07                                  Outpatient           False  ...          13.7               g/dL            False         NaN                NaN
+2004  00017-00007 2025-08-04 2025-08-04                    Intensive care admission           False  ...         124.3                g/L            False         NaN                NaN
+2005  00017-00008 2025-08-04 2025-08-04   Admitted to normal ward for clinical care           False  ...           NaN                NaN             True       False                NaN
+2006  00017-00009 2025-08-06 2025-08-06                    Intensive care admission           False  ...           1.6               g/dL             True       False                NaN
+
+[2007 rows x 472 columns], 'medication':            subjid    medi_medtype medi_medtype_otherl2 medi_medtype_otherl3 medi_treat  ... medi_dose  medi_units medi_numdoses medi_offlab medi_offlab_spec1
+0     00000-00001             NaN                  NaN                  NaN      False  ...       NaN         NaN           NaN        True        wrguosqdcr
+1     00000-00001       Antiviral                  NaN                  NaN      False  ...       NaN         NaN           NaN        True        gnimbqbjdj
+2     00000-00001    Antipruritic                  NaN                  NaN       True  ...      18.6  tmqzhkwyxk          92.5        True        wcqjruleui
+3     00000-00001       Antiviral                  NaN                  NaN      False  ...       NaN         NaN           NaN        True        hjgsfdvffx
+4     00000-00001  Corticosteroid                  NaN                  NaN      False  ...       NaN         NaN           NaN        True        wjvdapgaxo
+...           ...             ...                  ...                  ...        ...  ...       ...         ...           ...         ...               ...
+3432  00017-00009      Antibiotic                  NaN                  NaN      False  ...       NaN         NaN           NaN        True        qaqisbrvcd
+3433  00017-00009           Other        Antihistamine                  NaN      False  ...       NaN         NaN           NaN         NaN               NaN
+3434  00017-00009           Other            Diuretics                  NaN       True  ...      60.5  ilpqmnizgj          65.1        True        wvzkgioohc
+3435  00017-00009       Antiviral                  NaN                  NaN       True  ...       5.9  mfzzcyvrsa           NaN        True        xyxhrcjyeh
+3436  00017-00009       Antiviral                  NaN                  NaN      False  ...       NaN         NaN           NaN        True        qwwauocmuz
+
+[3437 rows x 30 columns], 'pathogen_testing':            subjid test_yn test_reasno test_collectiondate       test_biospecimentype  ...        test_pathtested test_pathtested_otherl2 test_pathtested_otherl3   test_result test_ctvalue
+0     00000-00004   False  qpznmdwqlr                 NaT                        NaN  ...                    NaN                     NaN                     NaN           NaN          NaN
+1     00000-00004    True         NaN                 NaT                      Urine  ...  Measles morbillivirus                     NaN                     NaN      Detected         49.9
+2     00000-00004    True         NaN          2025-08-07                      Urine  ...                  Other   Clostridium difficile                     NaN      Detected          NaN
+3     00000-00005   False  wvbrvqnzlp                 NaT                        NaN  ...                    NaN                     NaN                     NaN           NaN          NaN
+4     00000-00005   False  bhvjzwjcrk                 NaT                        NaN  ...                    NaN                     NaN                     NaN           NaN          NaN
+...           ...     ...         ...                 ...                        ...  ...                    ...                     ...                     ...           ...          ...
+3530  00017-00008    True         NaN          2025-08-05                   Eye swab  ...                  Other        Plasmodium vivax                     NaN     Equivocal          NaN
+3531  00017-00008    True         NaN          2025-08-03                   Eye swab  ...  Measles morbillivirus                     NaN                     NaN  Not detected          NaN
+3532  00017-00008   False  dpituubhvk                 NaT                        NaN  ...                    NaN                     NaN                     NaN           NaN          NaN
+3533  00017-00008    True         NaN          2025-08-02                Buccal swab  ...  Measles morbillivirus                     NaN                     NaN           NaN          NaN
+3534  00017-00008    True         NaN          2025-08-08  CSF (Cerebrospinal Fluid)  ...                  Other              Plasmodium                     NaN     Equivocal          NaN
+
+[3535 rows x 13 columns], 'photographs':            subjid photo_date      photo_type        photo_site photo_site_oth photo_sampleyn photo_sampleid                                         photo_desc
+0     00000-00001 2025-08-08           Other             Other     qoyjuhhsqo            NaN            NaN  fxtcdodficdurepppvlxrbxqbduujsrfnnrbtmpiphjxjg...
+1     00000-00001 2025-08-07  Mucosal lesion        Back torso            NaN            NaN            NaN  tzsozremfobodqyhqsajzbhugmkwnmlepnaztzgmswsatz...
+2     00000-00001 2025-08-03             NaN       Front torso            NaN            NaN            NaN  iyqfzwnspltqidyqxsqqckqlzwxklpswsvuauekioronux...
+3     00000-00001 2025-08-05             NaN        Back torso            NaN            Yes     rstxfdeclf  gihpqdddaetrtncywviigrujoimmqjpsgaxiazsowdihfd...
+4     00000-00001 2025-08-05           Other  Left arm or hand            NaN             No            NaN  ayxaxbvtbtiqmmcqclxojdgsqpwqkdboaxtwycrldiirsn...
+...           ...        ...             ...               ...            ...            ...            ...                                                ...
+3477  00017-00005 2025-08-05  Mucosal lesion  Left leg or foot            NaN            Yes     waejhyhiss  xrozinxwvddvvfluqxxqonvyswkzyirlpyzkrpzekihxgd...
+3478  00017-00005 2025-08-03           Other   Inside of mouth            NaN            Yes     ztguzfrtbl  mwwosrtgnxpoivddirajseairewelmhhgrtzdkygudftvq...
+3479  00017-00008 2025-08-02  Mucosal lesion               NaN            NaN            Yes     clagvjtowg  boazaxgawdzfijlcbvuzjxhoxmktvlrozojhjhmhyzkxwb...
+3480  00017-00008 2025-08-07             NaN   Inside of mouth            NaN            NaN            NaN  uxthmejdxjeliuwuryxmrwmjovzhxfzbswugnnszlavvzh...
+3481  00017-00008 2025-08-02             NaN      Pubic region            NaN             No            NaN  tfigdopjqqxdbezjkamjazqbmjynnewcogjbjpxcvwppgq...
+
+[3482 rows x 8 columns], 'outcome':           subjid                                      diagn_primary                                diagn_primary_type  ... outco_selfcare outco_carerel outco_carefordif
+0    00000-00001  Human immunodeficiency virus infection (HIV in...                                               NaN  ...            NaN           NaN              NaN
+1    00000-00002  Human immunodeficiency virus infection (HIV in...  Radiologically confirmed (e.g., chest X-ray, CT)  ...          Worse         False              NaN
+2    00000-00003                                               Mpox  Radiologically confirmed (e.g., chest X-ray, CT)  ...            NaN           NaN              NaN
+3    00000-00004                                Bacterial infection  Radiologically confirmed (e.g., chest X-ray, CT)  ...            NaN           NaN            False
+4    00000-00005                             Chickenpox (Varicella)                                               NaN  ...            NaN           NaN            False
+..           ...                                                ...                                               ...  ...            ...           ...              ...
+995  00017-00005                                              Other                                             Other  ...            NaN           NaN              NaN
+996  00017-00006                                              Other  Radiologically confirmed (e.g., chest X-ray, CT)  ...            NaN           NaN              NaN
+997  00017-00007                                               Mpox                                             Other  ...            NaN           NaN              NaN
+998  00017-00008                                Bacterial infection  Radiologically confirmed (e.g., chest X-ray, CT)  ...            NaN         False             True
+999  00017-00009                                              Other                                               NaN  ...            NaN           NaN              NaN
+
+[1000 rows x 171 columns], 'follow_up':            subjid follow_date                                     follow_outcome  ... follow_seque_type___Other       follow_seque_otherl2 follow_seque_otherl3
+0     00000-00003  2025-08-02  Serious complication and/or re-hospitalisation...  ...                     False                        NaN                  NaN
+1     00000-00004  2025-08-05                                  Loss to follow-up  ...                       NaN                        NaN                  NaN
+2     00000-00004  2025-08-05  No lesions ever developed and no serious compl...  ...                     False                        NaN                  NaN
+3     00000-00006  2025-08-06                                              Other  ...                      True  Immunological Consequence                  NaN
+4     00000-00006  2025-08-04                                              Other  ...                     False                        NaN                  NaN
+...           ...         ...                                                ...  ...                       ...                        ...                  ...
+1007  00017-00003  2025-08-08                                  Loss to follow-up  ...                       NaN                        NaN                  NaN
+1008  00017-00004  2025-08-03                         Transfer to other facility  ...                     False                        NaN                  NaN
+1009  00017-00005  2025-08-07  Serious complication and/or re-hospitalisation...  ...                     False                        NaN                  NaN
+1010  00017-00005  2025-08-04                                  Loss to follow-up  ...                       NaN                        NaN                  NaN
+1011  00017-00007  2025-08-02                                   Early withdrawal  ...                       NaN                        NaN                  NaN
+
+[1012 rows x 27 columns], 'withdrawal':           subjid withd_date  withd_reas withd_active withd_datacoll withd_datasample
+0    00000-00001 2025-08-02  zgkofbxcba        False           True            False
+1    00000-00002 2025-08-01  wheuyyppti         True          False              NaN
+2    00000-00003 2025-08-04  ibxwkntiuc        False          False             True
+3    00000-00004 2025-08-06  sagebodomf        False          False            False
+4    00000-00005 2025-08-07  ndfbnsfffd          NaN           True             True
+..           ...        ...         ...          ...            ...              ...
+995  00017-00005 2025-08-07  iobzrbycwr         True          False            False
+996  00017-00006 2025-08-02  dfsquzggoo        False          False            False
+997  00017-00007 2025-08-02         NaN         True          False            False
+998  00017-00008 2025-08-04  olemuxwzoa         True           True             True
+999  00017-00009        NaT  ywbtwnqmay        False            NaN            False
+
+[1000 rows x 6 columns]}
