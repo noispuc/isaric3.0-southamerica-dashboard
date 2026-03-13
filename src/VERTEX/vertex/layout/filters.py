@@ -280,7 +280,17 @@ def define_filters_controls_modal(
 
 
 def get_filter_options(df_map):
-    max_age = max((100, df_map["demog_age"].max()))
+    """Build filter UI options from df_map.
+
+    Must be robust to empty/missing data (REDCap-free mode).
+    """
+    # --- Age ---
+    try:
+        max_age_val = df_map["demog_age"].max() if df_map is not None and "demog_age" in df_map.columns else 100
+    except Exception:
+        max_age_val = 100
+    max_age = int(max(100, 0 if pd.isna(max_age_val) else max_age_val))
+
     age_options = {
         "min": 0,
         "max": max_age,
@@ -289,7 +299,25 @@ def get_filter_options(df_map):
         "value": [0, max_age],
     }
 
-    admdate_yyyymm = pd.date_range(start=df_map["pres_date"].min(), end=df_map["pres_date"].max(), freq="MS")
+    # --- Admission date (pres_date) ---
+    # If missing/empty, default to last 12 months.
+    if df_map is None or "pres_date" not in df_map.columns:
+        start = pd.Timestamp.today().normalize() - pd.DateOffset(months=12)
+        end = pd.Timestamp.today().normalize()
+    else:
+        start = pd.to_datetime(df_map["pres_date"], errors="coerce").min()
+        end = pd.to_datetime(df_map["pres_date"], errors="coerce").max()
+        if pd.isna(start) or pd.isna(end):
+            start = pd.Timestamp.today().normalize() - pd.DateOffset(months=12)
+            end = pd.Timestamp.today().normalize()
+
+    if start > end:
+        start, end = end, start
+
+    admdate_yyyymm = pd.date_range(start=start, end=end, freq="MS")
+    if len(admdate_yyyymm) == 0:
+        admdate_yyyymm = pd.date_range(start=pd.Timestamp.today().normalize() - pd.DateOffset(months=12), end=pd.Timestamp.today().normalize(), freq="MS")
+
     admdate_options = {
         "min": 0,
         "max": len(admdate_yyyymm) - 1,
@@ -298,10 +326,19 @@ def get_filter_options(df_map):
         "value": [0, len(admdate_yyyymm) - 1],
     }
 
-    outcome_options = [{"label": v, "value": v} for v in df_map["filters_outcome"].dropna().unique()]
+    # --- Outcome ---
+    if df_map is not None and "filters_outcome" in df_map.columns:
+        outcome_options = [{"label": v, "value": v} for v in df_map["filters_outcome"].dropna().unique()]
+    else:
+        outcome_options = []
 
-    country_options = [{"label": c, "value": c} for c in sorted(df_map["filters_country"].dropna().unique())]
+    # --- Country ---
+    if df_map is not None and "filters_country" in df_map.columns:
+        country_options = [{"label": c, "value": c} for c in sorted(df_map["filters_country"].dropna().unique())]
+    else:
+        country_options = []
 
+    # --- Sex ---
     sex_options = [
         {"label": "Male", "value": "Male"},
         {"label": "Female", "value": "Female"},

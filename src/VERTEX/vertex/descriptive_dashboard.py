@@ -149,8 +149,8 @@ def register_callbacks(app):
         ctx = dash.callback_context
 
         if not ctx.triggered:
-            # Initial load, no input has triggered the callback yet
-            output = [["all"], [{"label": "Unselect all", "value": "all"}], country_value]
+            # Initial load
+            return [["all"], [{"label": "Unselect all", "value": "all"}], country_value]
 
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
@@ -246,16 +246,19 @@ def register_callbacks(app):
         project_data = get_project_data(project_path)
         if not project_data:
             raise PreventUpdate
-
-        visuals = project_data["insight_panels"][suffix].create_visuals(
-            df_map=project_data["df_map"].copy(),
-            df_forms_dict={k: v.copy() for k, v in project_data["df_forms_dict"].items()},
-            dictionary=project_data["dictionary"].copy(),
-            quality_report=project_data["quality_report"],
-            suffix=suffix,
-            filepath=project_path,
-            save_inputs=False,
-        )
+        try:
+            visuals = project_data["insight_panels"][suffix].create_visuals(
+                df_map=project_data["df_map"].copy(),
+                df_forms_dict={k: v.copy() for k, v in project_data["df_forms_dict"].items()},
+                dictionary=project_data["dictionary"].copy() if hasattr(project_data["dictionary"], 'copy') else project_data["dictionary"],
+                quality_report=project_data["quality_report"],
+                suffix=suffix,
+                filepath=project_path,
+                save_inputs=False,
+            )
+        except Exception as e:
+            logger.error(f"Failed to build visuals for {suffix}: {e}")
+            visuals = None
 
         button = {**project_data["insight_panels"][suffix].define_button(), **{"suffix": suffix}}
         modal_content = create_modal(visuals, button, get_filter_options(project_data["df_map"]))
@@ -274,8 +277,8 @@ def register_callbacks(app):
     def update_country_selection_modal(selectall_value, country_value, country_options):
         ctx = dash.callback_context
         if not ctx.triggered:
-            # Initial load, no input has triggered the callback yet
-            output = [["all"], [{"label": "Unselect all", "value": "all"}], country_value]
+            # Initial load
+            return [["all"], [{"label": "Unselect all", "value": "all"}], country_value]
 
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
         #
@@ -493,22 +496,33 @@ def register_callbacks(app):
             df_forms_filtered[key] = filter_df_map(
                 df_form, sex_value, age_value, country_value, admdate_value, admdate_marks, outcome_value
             )
-
-        # If everything is empty, return blank modal
+        # If everything is empty, keep the modal but show a no-data message
         df_list = [df_map_filtered] + list(df_forms_filtered.values())
         if all(df.empty for df in df_list):
-            return (), sex_value, age_value, country_value, admdate_value, outcome_value
-
+            visuals = None
+            modal = create_modal(visuals, button, get_filter_options(df_map))
+            return (
+                modal,
+                sex_value,
+                age_value,
+                country_value,
+                admdate_value,
+                outcome_value,
+            )
         # Otherwise rebuild visuals
-        visuals = project_data["insight_panels"][suffix].create_visuals(
-            df_map=df_map_filtered.copy(),
-            df_forms_dict={k: v.copy() for k, v in df_forms_filtered.items()},
-            dictionary=dictionary.copy(),
-            quality_report=quality_report,
-            filepath=project_path,
-            suffix=suffix,
-            save_inputs=project_data["config_dict"]["save_filtered_public_outputs"],
-        )
+        try:
+            visuals = project_data["insight_panels"][suffix].create_visuals(
+                df_map=df_map_filtered.copy(),
+                df_forms_dict={k: v.copy() for k, v in df_forms_filtered.items()},
+                dictionary=dictionary.copy() if hasattr(dictionary, 'copy') else dictionary,
+                quality_report=quality_report,
+                filepath=project_path,
+                suffix=suffix,
+                save_inputs=project_data["config_dict"]["save_filtered_public_outputs"],
+            )
+        except Exception as e:
+            logger.error(f"Failed to rebuild visuals for {suffix}: {e}")
+            visuals = None
 
         modal = create_modal(visuals, button, get_filter_options(df_map))
 
@@ -572,6 +586,31 @@ def load_project_data(project_path):
     insight_panels, buttons = get_insight_panels(config_dict, insight_panels_path)
 
     df_map, df_forms_dict, dictionary, quality_report = load_vertex_data(project_path, config_dict)
+
+    # --- REDCap-free robustness: ensure minimum schema exists even if df_map is empty ---
+    if not isinstance(df_map, pd.DataFrame):
+        # Backward compatibility if some loader returns a dict payload
+        if isinstance(df_map, dict) and 'df_map' in df_map:
+            payload = df_map
+            df_map = payload.get('df_map', pd.DataFrame())
+            df_forms_dict = payload.get('df_forms_dict', {}) or {}
+            dictionary = payload.get('dictionary', pd.DataFrame())
+            quality_report = payload.get('quality_report', {})
+        else:
+            df_map = pd.DataFrame()
+
+    if not isinstance(df_forms_dict, dict):
+        df_forms_dict = {}
+
+    required_cols = ['subjid', 'demog_sex', 'demog_age', 'pres_date', 'country_iso', 'outco_binary_outcome']
+    for col in required_cols:
+        if col not in df_map.columns:
+            df_map[col] = pd.NA
+
+    # Coerce core dtypes (safe on empty)
+    df_map['demog_age'] = pd.to_numeric(df_map['demog_age'], errors='coerce')
+    df_map['pres_date'] = pd.to_datetime(df_map['pres_date'], errors='coerce')
+
     df_map = df_map.reset_index(drop=True)
     df_map_with_countries = merge_data_with_countries(df_map)
     df_countries = get_countries(df_map_with_countries)

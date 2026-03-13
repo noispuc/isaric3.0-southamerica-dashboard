@@ -68,8 +68,8 @@ register_modal = dbc.Modal(
 
 
 def create_modal(visuals, button, filter_options):
-    if visuals is None:
-        insight_children = []
+    if not visuals:
+        insight_children = [html.Div('No data to display for the current filters.', style={'padding': '10px'})]
         about_str = ""
     else:
         insight_children = [
