@@ -17,14 +17,21 @@ def merge_data_with_countries(df_map, add_capital_location=False):
         "martynafford/natural-earth-geojson/master/",
         "50m/cultural/ne_50m_populated_places_simple.json",
     )
-    capitals = json.loads(requests.get(geojson).text)
-    features = ["adm0_a3", "latitude", "longitude", "featurecla"]
-    capitals = [{k: x["properties"][k] for k in features} for x in capitals["features"]]
-    capitals = pd.DataFrame.from_dict(capitals)
-    capitals = capitals.sort_values(by=["adm0_a3", "featurecla"])
-    capitals = capitals.drop_duplicates(["adm0_a3"]).reset_index(drop=True)
-    capitals.drop(columns=["featurecla"], inplace=True)
-    capitals.rename(columns={"adm0_a3": "Code"}, inplace=True)
+
+    capitals = None
+    try:
+        capitals_json = requests.get(geojson, timeout=20)
+        capitals_json.raise_for_status()
+        capitals = json.loads(capitals_json.text)
+        features = ["adm0_a3", "latitude", "longitude", "featurecla"]
+        capitals = [{k: x["properties"][k] for k in features} for x in capitals["features"]]
+        capitals = pd.DataFrame.from_dict(capitals)
+        capitals = capitals.sort_values(by=["adm0_a3", "featurecla"])                           .drop_duplicates(["adm0_a3"])                           .reset_index(drop=True)
+        capitals.drop(columns=["featurecla"], inplace=True)
+        capitals.rename(columns={"adm0_a3": "Code"}, inplace=True)
+    except Exception:
+        # Offline / restricted environments: keep going without capital coords
+        capitals = pd.DataFrame(columns=["Code", "latitude", "longitude"])
 
     countries = pd.merge(countries, capitals, how="left", on="Code")
 
@@ -83,10 +90,23 @@ def interpolate_colors(colors, n):
 
 
 def get_map_colorscale(df_countries, map_percentile_cutoffs=[10, 20, 30, 40, 50, 60, 70, 80, 90, 99, 100]):
+    """Build a colorscale based on country_count distribution.
+
+    If df_countries is empty or invalid, return a simple default scale.
+    """
+    if df_countries is None or df_countries.empty or "country_count" not in df_countries.columns:
+        return [[0, "rgb(220,220,220)"], [1, "rgb(220,220,220)"]]
+
+    # Guard against all-NaN / zero counts
+    max_count = df_countries["country_count"].max()
+    if pd.isna(max_count) or max_count <= 0:
+        return [[0, "rgb(220,220,220)"], [1, "rgb(220,220,220)"]]
+
     cutoffs = np.percentile(df_countries["country_count"], map_percentile_cutoffs)
     if df_countries["country_count"].count() < len(map_percentile_cutoffs):
         cutoffs = df_countries["country_count"].sort_values()
-    cutoffs = cutoffs / df_countries["country_count"].max()
+
+    cutoffs = cutoffs / max_count
     num_colors = len(cutoffs)
     cutoffs = np.insert(np.repeat(cutoffs, 2)[:-1], 0, 0)
     colors = interpolate_colors(["0000FF", "00EA66", "A7FA00", "FFBE00", "FF7400", "FF3500"], num_colors)
@@ -102,7 +122,27 @@ def create_map(df_countries, map_layout_dict=None):
         "50m/cultural/ne_50m_admin_0_countries.json",
     )
 
+    # Empty / no data -> show blank map
+    if df_countries is None or df_countries.empty:
+        fig = go.Figure(
+            go.Choroplethmap(
+                geojson=geojson,
+                featureidkey="properties.ADM0_A3",
+                locations=[],
+                z=[],
+                showscale=False,
+                marker_line_color="black",
+                marker_opacity=0.2,
+                marker_line_width=0.3,
+            )
+        )
+        if map_layout_dict:
+            fig.update_layout(map_layout_dict)
+        return fig
+
     map_colorscale = get_map_colorscale(df_countries)
+
+    zmax = df_countries["country_count"].max() if "country_count" in df_countries.columns else None
 
     fig = go.Figure(
         go.Choroplethmap(
@@ -110,11 +150,11 @@ def create_map(df_countries, map_layout_dict=None):
             featureidkey="properties.ADM0_A3",
             locations=df_countries["country_iso"],
             z=df_countries["country_count"],
-            text=df_countries["country_name"],
+            text=df_countries.get("country_name"),
             colorscale=map_colorscale,
             showscale=True,
             zmin=1,
-            zmax=df_countries["country_count"].max(),
+            zmax=zmax,
             marker_line_color="black",
             marker_opacity=0.5,
             marker_line_width=0.3,
@@ -129,22 +169,45 @@ def create_map(df_countries, map_layout_dict=None):
             },
         )
     )
-    fig.update_layout(map_layout_dict)
-    # fig.update_layout({'width': 10.5})
+    if map_layout_dict:
+        fig.update_layout(map_layout_dict)
     return fig
 
 
 def filter_df_map(df_map, sex_value, age_value, country_value, admdate_value, admdate_marks, outcome_value):
-    df_map["filters_age"] = df_map["filters_age"].astype(float)
-    admdate_min = pd.to_datetime(admdate_marks[str(admdate_value[0])]["label"])
-    admdate_max = pd.to_datetime(admdate_marks[str(admdate_value[1])]["label"])
-    df_map_filtered = df_map[
-        (df_map["filters_sex"].isin(sex_value))
-        & ((df_map["filters_age"] >= age_value[0]) | df_map["filters_age"].isna())
-        & ((df_map["filters_age"] <= age_value[1]) | df_map["filters_age"].isna())
-        & ((df_map["filters_admdate"] >= admdate_min) | df_map["filters_admdate"].isna())
-        & ((df_map["filters_admdate"] <= admdate_max) | df_map["filters_admdate"].isna())
-        & (df_map["filters_outcome"].isin(outcome_value))
-        & (df_map["filters_country"].isin(country_value))
+    """Filter df_map using the dashboard controls.
+
+    Must be robust to empty inputs (REDCap-free / demo mode).
+    """
+    if df_map is None or df_map.empty:
+        return pd.DataFrame(columns=df_map.columns if hasattr(df_map, "columns") else [])
+
+    required = [
+        "filters_sex",
+        "filters_age",
+        "filters_admdate",
+        "filters_outcome",
+        "filters_country",
+    ]
+    if any(col not in df_map.columns for col in required):
+        # Without the standardized filter columns we can't filter safely.
+        return df_map.iloc[0:0].reset_index(drop=True)
+
+    # Defensive casting
+    df = df_map.copy()
+    df["filters_age"] = pd.to_numeric(df["filters_age"], errors="coerce")
+    df["filters_admdate"] = pd.to_datetime(df["filters_admdate"], errors="coerce")
+
+    admdate_min = pd.to_datetime(admdate_marks[str(admdate_value[0])]["label"], errors="coerce")
+    admdate_max = pd.to_datetime(admdate_marks[str(admdate_value[1])]["label"], errors="coerce")
+
+    df_map_filtered = df[
+        (df["filters_sex"].isin(sex_value))
+        & ((df["filters_age"] >= age_value[0]) | df["filters_age"].isna())
+        & ((df["filters_age"] <= age_value[1]) | df["filters_age"].isna())
+        & ((df["filters_admdate"] >= admdate_min) | df["filters_admdate"].isna())
+        & ((df["filters_admdate"] <= admdate_max) | df["filters_admdate"].isna())
+        & (df["filters_outcome"].isin(outcome_value))
+        & (df["filters_country"].isin(country_value))
     ]
     return df_map_filtered.reset_index(drop=True)

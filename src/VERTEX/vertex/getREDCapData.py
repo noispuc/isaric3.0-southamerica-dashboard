@@ -747,6 +747,7 @@ def get_redcap_data(redcap_url, redcap_api_key, data_access_groups=None, user_as
 
     new_dictionary = pd.concat([new_dictionary, pd.DataFrame.from_dict(country_dict)], axis=0)
     new_dictionary = new_dictionary.reset_index(drop=True)
+    quality_report = ""
     return df_map, df_forms_dict, new_dictionary, quality_report
 
 
