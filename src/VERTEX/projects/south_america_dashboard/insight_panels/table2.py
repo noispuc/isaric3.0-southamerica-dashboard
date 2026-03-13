@@ -22,8 +22,8 @@ def _get_engine_from_env():
     """
     user = os.getenv("PGUSER")
     password = os.getenv("PGPASSWORD")
-    host = os.getenv("PGHOST", "host.docker.internal")
-    port = os.getenv("PGPORT", "5432")
+    host = os.getenv("PGHOST")
+    port = os.getenv("PGPORT")
     db = os.getenv("PGDATABASE")
     missing = [
         name

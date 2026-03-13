@@ -22,11 +22,11 @@ def define_button():
 
 def _get_engine_from_env():
     """Cria uma engine PostgreSQL usando variáveis de ambiente (PGHOST, etc.)."""
-    user = os.getenv("PGUSER", "postgres")
-    password = os.getenv("PGPASSWORD", "")
-    host = os.getenv("PGHOST", "localhost")
-    port = os.getenv("PGPORT", "5432")
-    dbname = os.getenv("PGDATABASE", "datasus")
+    user = os.getenv("PGUSER")
+    password = os.getenv("PGPASSWORD")
+    host = os.getenv("PGHOST")
+    port = os.getenv("PGPORT")
+    dbname = os.getenv("PGDATABASE")
     url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}"
     return create_engine(url)
 
