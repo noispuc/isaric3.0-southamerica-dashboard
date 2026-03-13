@@ -74,6 +74,7 @@ secrets.yml
 
 # 🎯 GitHub Actions temporários
 *.log
+*.log.*
 workflow-temp/
 datas/
 src/VERTEX/core
