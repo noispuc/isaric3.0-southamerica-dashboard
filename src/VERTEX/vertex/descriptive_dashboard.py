@@ -850,7 +850,7 @@ def main():
 if __name__ == "__main__":
     app = main()
     webbrowser.open("http://127.0.0.1:8081", new=2, autoraise=True)
-    app.run(debug=True, host="0.0.0.0", port=8081, use_reloader=False)
+    app.run(debug=True, host="127.0.0.1", port=8081, use_reloader=False)
 else:
     app = main()
     server = app.server
