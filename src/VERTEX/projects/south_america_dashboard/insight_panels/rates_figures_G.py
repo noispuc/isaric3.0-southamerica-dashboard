@@ -138,7 +138,7 @@ def create_visuals(
     for ano in anos:
         df_ano = _load_taxas_dengue_ano(engine, ano=ano)
         if not df_ano.empty:
-            dfs_casos.append(df_ano[["ano", "Dengue grave"]])
+            dfs_casos.append(df_ano[["ano", "Severe dengue"]])
     if dfs_casos:
         df_casos_all = pd.concat(dfs_casos, ignore_index=True)
         df_casos_all.rename(
@@ -153,7 +153,7 @@ def create_visuals(
             index_column="ano",
             barmode="group",
             xaxis_tickformat="",
-            suffix=f"{suffix}/taxa_casos_confirmados_todos_anos",
+            suffix=suffix,
             filepath=filepath,
             save_inputs=save_inputs,
             graph_label="Confirmed dengue cases rate",
@@ -178,7 +178,7 @@ def create_visuals(
             index_column="ano",
             barmode="group",
             xaxis_tickformat="",
-            suffix=f"{suffix}/taxa_hosp_dengue_todos_anos",
+            suffix=suffix,
             filepath=filepath,
             save_inputs=save_inputs,
             graph_label="Dengue hospitalization rate",
@@ -203,7 +203,7 @@ def create_visuals(
             index_column="ano",
             barmode="group",
             xaxis_tickformat="",
-            suffix=f"{suffix}/taxa_letalidade_dengue_todos_anos",
+            suffix=suffix,
             filepath=filepath,
             save_inputs=save_inputs,
             graph_label="Dengue case fatality rate",

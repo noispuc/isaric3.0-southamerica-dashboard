@@ -41,7 +41,7 @@ def _get_engine_from_env():
             "Defina-as no arquivo .env ou no ambiente antes de rodar o dashboard."
         )
     if host in ("localhost", "127.0.0.1"):
-        host = "host.docker.internal"
+        host = "127.0.0.1"
     url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db}"
     safe_url = f"postgresql+psycopg2://{user}:*****@{host}:{port}/{db}"
     print("[TABLE1] Conectando ao Postgres com URL:", safe_url, flush=True)

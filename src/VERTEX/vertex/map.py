@@ -56,6 +56,59 @@ def get_countries(df_map):
     df_countries.rename(columns={"subjid": "country_count"}, inplace=True)
     return df_countries
 
+def apply_country_overrides(df_countries, country_overrides=None):
+    """
+    Force specific country counts into the choropleth input dataframe.
+
+    country_overrides example:
+    {
+        "BRA": {"country_name": "Brazil", "country_count": 1500},
+        "ARG": {"country_name": "Argentina", "country_count": 250},
+        "USA": 900
+    }
+    """
+    base_columns = ["country_iso", "country_name", "country_count"]
+
+    if df_countries is None or df_countries.empty:
+        df_countries = pd.DataFrame(columns=base_columns)
+    else:
+        df_countries = df_countries.copy()
+        for col in base_columns:
+            if col not in df_countries.columns:
+                df_countries[col] = pd.NA
+
+    if not country_overrides:
+        return df_countries[base_columns].copy()
+
+    for country_iso, override in country_overrides.items():
+        if isinstance(override, (int, float)):
+            country_name = country_iso
+            country_count = override
+        else:
+            country_name = override.get("country_name", country_iso)
+            country_count = override.get("country_count", 0)
+
+        mask = df_countries["country_iso"].eq(country_iso)
+
+        if mask.any():
+            df_countries.loc[mask, "country_name"] = country_name
+            df_countries.loc[mask, "country_count"] = country_count
+        else:
+            df_countries = pd.concat(
+                [
+                    df_countries,
+                    pd.DataFrame(
+                        [{
+                            "country_iso": country_iso,
+                            "country_name": country_name,
+                            "country_count": country_count,
+                        }]
+                    ),
+                ],
+                ignore_index=True,
+            )
+
+    return df_countries[base_columns].copy()
 
 def interpolate_colors(colors, n):
     """Interpolate among multiple hex colors."""
@@ -115,12 +168,14 @@ def get_map_colorscale(df_countries, map_percentile_cutoffs=[10, 20, 30, 40, 50,
     return custom_scale
 
 
-def create_map(df_countries, map_layout_dict=None):
+def create_map(df_countries, map_layout_dict=None, country_overrides=None):
     geojson = os.path.join(
         "https://raw.githubusercontent.com/",
         "martynafford/natural-earth-geojson/master/",
         "50m/cultural/ne_50m_admin_0_countries.json",
     )
+
+    df_countries = apply_country_overrides(df_countries, country_overrides)
 
     # Empty / no data -> show blank map
     if df_countries is None or df_countries.empty:
@@ -141,7 +196,6 @@ def create_map(df_countries, map_layout_dict=None):
         return fig
 
     map_colorscale = get_map_colorscale(df_countries)
-
     zmax = df_countries["country_count"].max() if "country_count" in df_countries.columns else None
 
     fig = go.Figure(

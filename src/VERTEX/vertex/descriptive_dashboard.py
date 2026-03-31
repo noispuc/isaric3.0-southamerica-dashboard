@@ -156,19 +156,15 @@ def register_callbacks(app):
             outcome_value,
         )
 
-        if df_filtered.empty:
-            geojson = (
-                "https://raw.githubusercontent.com/"
-                "martynafford/natural-earth-geojson/master/"
-                "50m/cultural/ne_50m_admin_0_map_units.json"
-            )
-            fig = go.Figure(
-                go.Choroplethmap(geojson=geojson, featureidkey="properties.ISO_A3"),
-                layout=map_layout_dict,
-            )
-        else:
-            df_countries = get_countries(df_filtered)
-            fig = create_map(df_countries, map_layout_dict)
+        df_countries = get_countries(df_filtered) if not df_filtered.empty else pd.DataFrame(
+            columns=["country_iso", "country_name", "country_count"]
+        )
+
+        fig = create_map(
+            df_countries,
+            map_layout_dict,
+            project_data.get("map_country_overrides", {}),
+        )
 
         return fig
 
@@ -316,7 +312,7 @@ def register_callbacks(app):
                 quality_report=project_data["quality_report"],
                 suffix=suffix,
                 filepath=project_path,
-                save_inputs=False,
+                save_inputs=True,
             )
         except Exception as e:
             logger.error(f"Failed to build visuals for {suffix}: {e}")
@@ -675,7 +671,11 @@ def build_project_layout(project_path):
         },
         margin={"r": 0, "t": 0, "l": 0, "b": 0},
     )
-    fig = create_map(project_data["df_countries"], map_layout_dict)
+    fig = create_map(
+    project_data["df_countries"],
+    map_layout_dict,
+    project_data["map_country_overrides"],
+)
 
     filter_options = get_filter_options(project_data["df_map"])
 
@@ -775,6 +775,7 @@ def load_project_data(project_path):
         "buttons": buttons,
         "config_dict": config_dict,
         "df_countries": df_countries,
+        "map_country_overrides": config_dict.get("map_country_overrides", {}),
     }
 
     PROJECT_CACHE[project_path] = project_data

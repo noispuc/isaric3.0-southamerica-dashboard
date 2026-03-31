@@ -51,6 +51,7 @@ config_defaults = {
     # Optional explicit filenames (resolved from vertex_dataframes_path or project_path)
     "df_map_filename": "df_map.csv",
     "dictionary_filename": None,  # will search common names
+    "map_country_overrides": {},
 }
 
 
@@ -365,6 +366,7 @@ def save_public_outputs(
     """Save public outputs to the PUBLIC folder."""
 
     public_path = os.path.join(project_path, config_dict["public_path"])
+    print(public_path)
     if os.path.exists(public_path):
         logger.warning(f'Folder "{public_path}" already exists, removing this')
         shutil.rmtree(public_path)
