@@ -1,5 +1,5 @@
 {
-	"project_name": "South America Dashboard",
+	"project_name": "South America Chikungunya Dashboard",
 	"api_key": null,
 	"api_url": null,
 	"data_source": "none",
@@ -13,7 +13,7 @@
 	"map_country_overrides": {
 		"BRA": {
 			"country_name": "Brazil",
-			"country_count": 15094478
+			"country_count": 1978391
 		}
 	},
 	"insight_panels": [

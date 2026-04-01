@@ -1,0 +1,28 @@
+{
+	"project_name": "South America Dengue Dashboard",
+	"api_key": null,
+	"api_url": null,
+	"data_source": "none",
+	"map_layout_center_latitude": 6,
+	"map_layout_center_longitude": -75,
+	"map_layout_zoom": 1.7,
+	"save_public_outputs": true,
+	"save_filtered_public_outputs": true,
+	"public_path": "/PUBLIC",
+	"insight_panels_path": "insight_panels/",
+	"map_country_overrides": {
+		"BRA": {
+			"country_name": "Brazil",
+			"country_count": 15094478
+		}
+	},
+	"insight_panels": [
+		"rates_figures",
+		"rates_figures_SS",
+		"rates_figures_CS",
+		"rates_figures_G",
+		"rates_figures_age",
+		"table1",
+		"table2"
+	]
+}
