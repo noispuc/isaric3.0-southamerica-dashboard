@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Dict
+from typing import List, Dict
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -44,27 +44,26 @@ def _get_engine_from_env():
         host = "127.0.0.1"
     url = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db}"
     safe_url = f"postgresql+psycopg2://{user}:*****@{host}:{port}/{db}"
-    print("[TABLE1] Conectando ao Postgres com URL:", safe_url, flush=True)
+    print("[TABLE2] Conectando ao Postgres com URL:", safe_url, flush=True)
     return create_engine(url, pool_pre_ping=True)
 
 
 def _load_sinan_view(year: int = 2024) -> pd.DataFrame:
     """
-    Lê diretamente a VIEW sinan.vw_casos_tab12_base (já mapeada no SQL).
-    Filtra apenas dengue e o ano solicitado.
+    Lê diretamente a VIEW sinan_chik.vw_casos_tab12_base.
+    A view já está filtrada para chikungunya confirmada (classi_fin = 13).
     """
     engine = _get_engine_from_env()
     sql = text(
         """
         SELECT *
-        FROM sinan.vw_casos_tab12_base
+        FROM sinan_chik.vw_casos_tab12_base
         WHERE ano = :ano
-          AND doenca = 'dengue'
         """
     )
     try:
         with engine.connect() as conn:
-            print("[TABLE2] Lendo sinan.vw_casos_tab12_base…", flush=True)
+            print("[TABLE2] Lendo sinan_chik.vw_casos_tab12_base…", flush=True)
             df = pd.read_sql(sql, conn, params={"ano": year})
         print("[TABLE2] Dados carregados da VIEW:", df.shape, flush=True)
         print("[TABLE2] Colunas:", list(df.columns), flush=True)
@@ -120,25 +119,34 @@ AGE_LABELS = [
 ]
 
 
+def _get_age_group_col(df: pd.DataFrame) -> str | None:
+    if "faixa_etaria_view" in df.columns:
+        return "faixa_etaria_view"
+    if "faixa_etaria" in df.columns:
+        return "faixa_etaria"
+    return None
+
+
 def _split_by_outcome(df: pd.DataFrame):
     """
     Separa em:
       - Todos
       - Cura
-      - Óbito por dengue
+      - Óbito
     usando desfecho_label da VIEW.
     """
     if "desfecho_label" not in df.columns:
         raise ValueError("[TABLE2] Coluna 'desfecho_label' não encontrada na VIEW.")
-    mask_any = df["desfecho_label"].isin(["Cura", "Óbito por dengue"])
+
+    mask_any = df["desfecho_label"].isin(["Cura", "Óbito"])
     df_any = df.loc[mask_any].copy()
     df_cure = df_any.loc[df_any["desfecho_label"] == "Cura"]
-    df_death = df_any.loc[df_any["desfecho_label"] == "Óbito por dengue"]
+    df_death = df_any.loc[df_any["desfecho_label"] == "Óbito"]
     groups = OrderedDict(
         [
             ("Todos", df_any),
             ("Cura", df_cure),
-            ("Óbito por dengue", df_death),
+            ("Óbito", df_death),
         ]
     )
     n_all = len(df_any)
@@ -146,17 +154,18 @@ def _split_by_outcome(df: pd.DataFrame):
     n_death = len(df_death)
     print(
         f"[TABLE2] N total com desfecho conhecido: {n_all} | "
-        f"Cura: {n_cure} | Óbito por dengue: {n_death}",
+        f"Cura: {n_cure} | Óbito: {n_death}",
         flush=True,
     )
     return groups, n_all, n_cure, n_death
 
 
-def _build_table2(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int]:
+def _build_table2(df: pd.DataFrame):
     df = df.copy()
     groups, n_all, n_cure, n_death = _split_by_outcome(df)
     col_names = list(groups.keys())
     rows: List[Dict[str, str]] = []
+    age_col = _get_age_group_col(df)
 
     def add_row(label: str, values: Dict[str, str] | None = None):
         row = {"Características": label}
@@ -169,14 +178,16 @@ def _build_table2(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int]:
         for g, gdf in groups.items()
     }
     add_row("Idade (Anos), mediana (IQR)", med_values)
+
     for faixa in AGE_LABELS:
         valores = {}
         for g, gdf in groups.items():
-            if "faixa_etaria" in gdf.columns:
-                valores[g] = _format_count_pct(gdf["faixa_etaria"], faixa)
+            if age_col is not None and age_col in gdf.columns:
+                valores[g] = _format_count_pct(gdf[age_col], faixa)
             else:
                 valores[g] = ""
         add_row(f"{faixa}, No. (%)", valores)
+
     add_row("No. de comorbidades, No. (%)", None)
     com_order = [("0", "Nenhuma"), ("1", "1"), ("2", "2"), ("≥3", ">= 3")]
     for internal, label in com_order:
@@ -187,6 +198,7 @@ def _build_table2(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int]:
             else:
                 valores[g] = ""
         add_row(label, valores)
+
     if "sexo_label" in df.columns:
         sex_all = df["sexo_label"].dropna()
         n_valid_sex = int(sex_all.shape[0])
@@ -209,6 +221,7 @@ def _build_table2(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int]:
             count_fem = int((ser == "Feminino").sum())
             valores[g] = _format_from_counts(count_fem, denom)
         add_row(label_genero, valores)
+
     if "escolaridade_nivel" in df.columns:
         esc_all = df["escolaridade_nivel"].dropna()
         n_valid_esc = int(esc_all.shape[0])
@@ -235,6 +248,7 @@ def _build_table2(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int]:
                 else:
                     valores[g] = ""
             add_row(cat, valores)
+
     if "raca_label" in df.columns:
         race_all = df["raca_label"].dropna()
         n_valid_race = int(race_all.shape[0])
@@ -256,6 +270,7 @@ def _build_table2(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int]:
                 else:
                     valores[g] = ""
             add_row(cat, valores)
+
     table = pd.DataFrame(rows)
     table = table[["Características"] + col_names]
     print("[TABLE2] Tabela 2 montada no formato final:", table.shape, flush=True)
@@ -276,19 +291,19 @@ def create_visuals(
     rename_map = {
         "Todos": f"Todos N = {_fmt_N(n_all)}",
         "Cura": f"Cura N = {_fmt_N(n_cure)}",
-        "Óbito por dengue": f"Óbito por dengue N = {_fmt_N(n_death)}",
+        "Óbito": f"Óbito N = {_fmt_N(n_death)}",
     }
     disp = disp.rename(columns=rename_map)
     table2 = idw.fig_table(
         disp,
-        table_key="table2_sinan",
+        table_key="table2_chik",
         suffix=suffix,
         filepath=filepath,
         save_inputs=save_inputs,
         graph_label="Tabela 2",
         graph_about=(
-            "Características dos casos de dengue segundo desfecho "
-            "(Cura vs Óbito por dengue), SINAN, 2024"
+            "Characteristics of confirmed chikungunya cases according to outcome "
+            "(Cure vs Death)"
         ),
     )
     return [table2]

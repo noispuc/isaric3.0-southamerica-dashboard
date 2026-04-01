@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple, Dict
+from typing import List, Dict
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -50,20 +50,20 @@ def _get_engine_from_env():
 
 def _load_sinan_view(year: int = 2024) -> pd.DataFrame:
     """
-    Lê diretamente a VIEW sinan.vw_casos_tab12_base (já mapeada no SQL).
+    Lê diretamente a VIEW sinan_chik.vw_casos_tab12_base.
+    A view já está filtrada para chikungunya confirmada (classi_fin = 13).
     """
     engine = _get_engine_from_env()
     sql = text(
         """
         SELECT *
-        FROM sinan.vw_casos_tab12_base
+        FROM sinan_chik.vw_casos_tab12_base
         WHERE ano = :ano
-          AND doenca = 'dengue'
         """
     )
     try:
         with engine.connect() as conn:
-            print("[TABLE1] Lendo sinan.vw_casos_tab12_base…", flush=True)
+            print("[TABLE1] Lendo sinan_chik.vw_casos_tab12_base…", flush=True)
             df = pd.read_sql(sql, conn, params={"ano": year})
         print("[TABLE1] Dados carregados da VIEW:", df.shape, flush=True)
         print("[TABLE1] Colunas:", list(df.columns), flush=True)
@@ -119,51 +119,21 @@ AGE_LABELS = [
 ]
 
 
-def _split_by_severity(df: pd.DataFrame):
-    """
-    Separa em:
-      - Todos
-      - Dengue sem Sinais de Alarme (10)
-      - Dengue com Sinais de Alarme (11)
-      - Dengue Grave (12)
-    usando classi_oms da VIEW (ou fallbacks se faltar).
-    """
-    if "classi_oms" in df.columns:
-        cls_col = "classi_oms"
-    elif "reclass_dengue_oms_v2" in df.columns:
-        cls_col = "reclass_dengue_oms_v2"
-    else:
-        cls_col = "classi_fin"
-    mask_any = df[cls_col].isin([10, 11, 12])
-    df_any = df.loc[mask_any].copy()
-    df_no = df_any.loc[df_any[cls_col] == 10]
-    df_warn = df_any.loc[df_any[cls_col] == 11]
-    df_sev = df_any.loc[df_any[cls_col] == 12]
-    groups = OrderedDict(
-        [
-            ("All", df_any),
-            ("Dengue without Warning Signs", df_no),
-            ("Dengue with Warning Signs", df_warn),
-            ("Severe Dengue", df_sev),
-        ]
-    )
-    n_all = len(df_any)
-    n_no = len(df_no)
-    n_warn = len(df_warn)
-    n_sev = len(df_sev)
-    print(
-        f"[TABLE1] N total dengue (10/11/12): {n_all} | "
-        f"sem sinais: {n_no} | com sinais: {n_warn} | grave: {n_sev}",
-        flush=True,
-    )
-    return groups, n_all, n_no, n_warn, n_sev
+def _get_age_group_col(df: pd.DataFrame) -> str | None:
+    if "faixa_etaria_view" in df.columns:
+        return "faixa_etaria_view"
+    if "faixa_etaria" in df.columns:
+        return "faixa_etaria"
+    return None
 
 
-def _build_table1(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int, int]:
+def _build_table1(df: pd.DataFrame):
     df = df.copy()
-    groups, n_all, n_no, n_warn, n_sev = _split_by_severity(df)
+    groups = OrderedDict([("Chikungunya", df)])
+    n_all = len(df)
     col_names = list(groups.keys())
     rows: List[Dict[str, str]] = []
+    age_col = _get_age_group_col(df)
 
     def add_row(label: str, values: Dict[str, str] | None = None):
         row = {"Characteristics": label}
@@ -176,14 +146,16 @@ def _build_table1(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int, int]:
         for g, gdf in groups.items()
     }
     add_row("Age (Years), median (IQR)", med_values)
+
     for faixa in AGE_LABELS:
         valores = {}
         for g, gdf in groups.items():
-            if "faixa_etaria" in gdf.columns:
-                valores[g] = _format_count_pct(gdf["faixa_etaria"], faixa)
+            if age_col is not None and age_col in gdf.columns:
+                valores[g] = _format_count_pct(gdf[age_col], faixa)
             else:
                 valores[g] = ""
         add_row(f"{faixa}, No. (%)", valores)
+
     add_row("No. of comorbidities, No. (%)", None)
     com_order = [("0", "None"), ("1", "1"), ("2", "2"), ("≥3", ">= 3")]
     for internal, label in com_order:
@@ -194,9 +166,10 @@ def _build_table1(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int, int]:
             else:
                 valores[g] = ""
         add_row(label, valores)
+
     if "sexo_label" in df.columns:
-        sex_all = df["sexo_label"]
-        n_valid_sex = int(sex_all.dropna().shape[0])
+        sex_all = df["sexo_label"].dropna()
+        n_valid_sex = int(sex_all.shape[0])
         pct_valid_sex = 100.0 * n_valid_sex / n_all if n_all > 0 else np.nan
         if n_valid_sex > 0:
             label_genero = (
@@ -216,6 +189,7 @@ def _build_table1(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int, int]:
             count_fem = int((ser == "Feminino").sum())
             valores[g] = _format_from_counts(count_fem, denom)
         add_row(label_genero, valores)
+
     if "escolaridade_nivel" in df.columns:
         esc_all = df["escolaridade_nivel"].dropna()
         n_valid_esc = int(esc_all.shape[0])
@@ -242,6 +216,7 @@ def _build_table1(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int, int]:
                 else:
                     valores[g] = ""
             add_row(label, valores)
+
     if "raca_label" in df.columns:
         race_all = df["raca_label"].dropna()
         n_valid_race = int(race_all.shape[0])
@@ -269,10 +244,11 @@ def _build_table1(df: pd.DataFrame) -> Tuple[pd.DataFrame, int, int, int, int]:
                 else:
                     valores[g] = ""
             add_row(label, valores)
+
     table = pd.DataFrame(rows)
     table = table[["Characteristics"] + col_names]
     print("[TABLE1] Tabela 1 montada no formato final:", table.shape, flush=True)
-    return table, n_all, n_no, n_warn, n_sev
+    return table, n_all
 
 
 def create_visuals(
@@ -285,24 +261,18 @@ def create_visuals(
     save_inputs,
 ):
     df_sinan = _load_sinan_view(year=2024)
-    disp, n_all, n_no, n_warn, n_sev = _build_table1(df_sinan)
-    rename_map = {
-        "All": f"All N = {_fmt_N(n_all)}",
-        "Dengue without Warning Signs": f"Dengue without Warning Signs N = {_fmt_N(n_no)}",
-        "Dengue with Warning Signs": f"Dengue with Warning Signs N = {_fmt_N(n_warn)}",
-        "Severe Dengue": f"Severe Dengue N = {_fmt_N(n_sev)}",
-    }
-    disp = disp.rename(columns=rename_map)
+    disp, n_all = _build_table1(df_sinan)
+    disp = disp.rename(columns={"Chikungunya": f"Chikungunya N = {_fmt_N(n_all)}"})
     table1 = idw.fig_table(
         disp,
-        table_key="table1_sinan",
+        table_key="table1_chik",
         suffix=suffix,
         filepath=filepath,
         save_inputs=save_inputs,
         graph_label="Table 1",
         graph_about=(
-            "Demographic and clinical characteristics of dengue cases "
-            "according to severity (SINAN, 2024)"
+            "Demographic and clinical characteristics of confirmed chikungunya cases "
+            "(SINAN)"
         ),
     )
     return [table1]
