@@ -38,8 +38,8 @@ def save_inputs_to_file(local_args):
         "fig_arguments": local_args,
         "fig_data": fig_data,
     }
-    os.makedirs(os.path.dirname(path), exist_ok=True)
     metadata_json_file = os.path.join(path, graph_id + "_metadata.json")
+    os.makedirs(os.path.dirname(metadata_json_file), exist_ok=True)
     with open(metadata_json_file, "w") as file:
         json.dump(metadata, file, indent=4)
     for ii in range(len(data)):

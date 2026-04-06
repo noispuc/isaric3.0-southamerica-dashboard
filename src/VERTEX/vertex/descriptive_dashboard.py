@@ -312,7 +312,7 @@ def register_callbacks(app):
                 quality_report=project_data["quality_report"],
                 suffix=suffix,
                 filepath=project_path,
-                save_inputs=True,
+                save_inputs=project_data["config_dict"]["save_public_outputs"],
             )
         except Exception as e:
             logger.error(f"Failed to build visuals for {suffix}: {e}")
