@@ -50,7 +50,7 @@ def _load_rates_by_age(engine) -> pd.DataFrame:
             obitos_chik,
             taxa_hosp_pct,
             taxa_letalidade_pct
-        FROM sinan_chik.vw_porcent_idade
+        FROM sinan_chik.vw_porcent_idade_new
         WHERE faixa_etaria <> 'Ignorado'
         ORDER BY ano, faixa_ordem;
     """

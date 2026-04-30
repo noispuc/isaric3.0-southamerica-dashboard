@@ -56,7 +56,7 @@ def _load_sinan_view(year: int = 2024) -> pd.DataFrame:
     sql = text(
         """
         SELECT *
-        FROM sinan.vw_casos_tab12_base
+        FROM sinan.vw_casos_tab12_base_new
         WHERE ano = :ano
           AND doenca = 'dengue'
         """

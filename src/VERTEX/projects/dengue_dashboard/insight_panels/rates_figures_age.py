@@ -50,7 +50,7 @@ def _load_rates_by_age(engine) -> pd.DataFrame:
             obitos_dengue,
             taxa_hosp_pct,
             taxa_letalidade_pct
-        FROM sinan.vw_porcent_idade
+        FROM sinan.vw_porcent_idade_new
         WHERE classi_bucket = '10_11_12'
           AND faixa_etaria <> 'Ignorado'
         ORDER BY ano, faixa_ordem;

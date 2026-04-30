@@ -31,7 +31,7 @@ def _load_taxa_incidencia_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, incidencia_100k
-        FROM sinan_chik.vw_chik_incidencia_100k
+        FROM sinan_chik.vw_chik_incidencia_100k_new
         WHERE ano = %(ano)s
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})
@@ -53,7 +53,7 @@ def _load_taxa_obito_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, taxa_mortalidade_100k
-        FROM sinan_chik.vw_chik_mortalidade_100k
+        FROM sinan_chik.vw_chik_mortalidade_100k_new
         WHERE ano = %(ano)s
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})
@@ -74,7 +74,7 @@ def _load_taxa_hosp_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, taxa_hospitalizacao_pct
-        FROM sinan_chik.vw_chik_hospitalizacao_porcent
+        FROM sinan_chik.vw_chik_hospitalizacao_porcent_new
         WHERE ano = %(ano)s
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})
@@ -96,7 +96,7 @@ def _load_taxa_letalidade_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, taxa_letalidade_pct
-        FROM sinan_chik.vw_chik_letalidade_porcent
+        FROM sinan_chik.vw_chik_letalidade_porcent_new
         WHERE ano = %(ano)s
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})

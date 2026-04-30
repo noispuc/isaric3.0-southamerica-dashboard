@@ -31,7 +31,7 @@ def _load_taxas_dengue_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, classi_bucket, incidencia_100k
-        FROM sinan.vw_dengue_incidencia_100k
+        FROM sinan.vw_dengue_incidencia_100k_new
         WHERE ano = %(ano)s
         AND classi_bucket IN ('10', '11', '12', '10_11_12')
     """
@@ -74,7 +74,7 @@ def _load_taxa_hosp_dengue_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, taxa_hospitalizacao_pct
-        FROM sinan.vw_dengue_hospitalizacao_porcent
+        FROM sinan.vw_dengue_hospitalizacao_porcent_new
         WHERE ano = %(ano)s
         AND classi_bucket = '10'
     """
@@ -99,7 +99,7 @@ def _load_taxa_letalidade_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, taxa_letalidade_pct
-        FROM sinan.vw_dengue_letalidade_porcent
+        FROM sinan.vw_dengue_letalidade_porcent_new
         WHERE ano = %(ano)s
         AND classi_bucket = '10'
     """
