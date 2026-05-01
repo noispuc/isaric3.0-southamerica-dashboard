@@ -34,7 +34,7 @@ def _load_rates_by_age(engine) -> pd.DataFrame:
     Retorna, para todos os anos disponíveis:
       - casos_confirmados
       - casos_hosp
-      - obitos_chik
+      - obitos_zika
       - taxa_hosp_pct
       - taxa_letalidade_pct
     Tudo agregado por (ano, faixa_etaria).
@@ -47,10 +47,10 @@ def _load_rates_by_age(engine) -> pd.DataFrame:
             faixa_ordem,
             casos_confirmados,
             casos_hosp,
-            obitos_chik,
+            obitos_zika,
             taxa_hosp_pct,
             taxa_letalidade_pct
-        FROM sinan_zika.vw_porcent_idade_new
+        FROM sinan_zika.vw_zika_porcent_idade_new
         WHERE faixa_etaria <> 'Ignorado'
         ORDER BY ano, faixa_ordem;
     """
@@ -88,7 +88,7 @@ def create_visuals(
     if not df_age.empty:
         df_age = df_age.sort_values(["ano", "faixa_etaria"])
         df_age_total = df_age.groupby("faixa_etaria", as_index=False, observed=True)[
-            ["casos_confirmados", "casos_hosp", "obitos_chik"]
+            ["casos_confirmados", "casos_hosp", "obitos_zika"]
         ].sum()
         df_age_total["faixa_etaria"] = pd.Categorical(
             df_age_total["faixa_etaria"],
@@ -103,7 +103,7 @@ def create_visuals(
             )
         ) * 100.0
         df_age_total["taxa_letal_pct"] = (
-            df_age_total["obitos_chik"]
+            df_age_total["obitos_zika"]
             / df_age_total["casos_confirmados"].where(
                 df_age_total["casos_confirmados"] > 0
             )
@@ -115,7 +115,7 @@ def create_visuals(
         fig_casos_total, gid_casos_total, glab_casos_total, gabout_casos_total = (
             idw.fig_bar_chart(
                 data=df_cases_total,
-                title="Confirmed chikungunya cases by age group (all years total)",
+                title="Confirmed zika cases by age group (all years total)",
                 xlabel="Age group",
                 ylabel="Number of confirmed cases",
                 index_column="faixa_etaria",
@@ -124,9 +124,9 @@ def create_visuals(
                 suffix=suffix,
                 filepath=filepath,
                 save_inputs=save_inputs,
-                graph_label="Confirmed chikungunya cases by age group (all years total)",
+                graph_label="Confirmed zika cases by age group (all years total)",
                 graph_about=(
-                    "Total number of confirmed chikungunya cases (classi_fin = 13) "
+                    "Total number of confirmed zika cases (classi_fin = 8) "
                     "across all available years, by age group."
                 ),
             )
@@ -141,7 +141,7 @@ def create_visuals(
         fig_hosp_total, gid_hosp_total, glab_hosp_total, gabout_hosp_total = (
             idw.fig_bar_chart(
                 data=df_hosp_total,
-                title="Chikungunya hospitalization rate (%) by age group (all years total)",
+                title="zika hospitalization rate (%) by age group (all years total)",
                 xlabel="Age group",
                 ylabel="Hospitalization rate (%)",
                 index_column="faixa_etaria",
@@ -150,10 +150,10 @@ def create_visuals(
                 suffix=suffix,
                 filepath=filepath,
                 save_inputs=save_inputs,
-                graph_label="Chikungunya hospitalization rate by age group (all years total)",
+                graph_label="zika hospitalization rate by age group (all years total)",
                 graph_about=(
-                    "Hospitalization rate among confirmed chikungunya cases "
-                    "(classi_fin = 13), across all available years, by age group."
+                    "Hospitalization rate among confirmed zika cases "
+                    "(classi_fin = 8), across all available years, by age group."
                 ),
             )
         )
@@ -167,7 +167,7 @@ def create_visuals(
         fig_letal_total, gid_letal_total, glab_letal_total, gabout_letal_total = (
             idw.fig_bar_chart(
                 data=df_letal_total,
-                title="Chikungunya case fatality rate (%) by age group (all years total)",
+                title="zika case fatality rate (%) by age group (all years total)",
                 xlabel="Age group",
                 ylabel="Case fatality rate (%)",
                 index_column="faixa_etaria",
@@ -176,9 +176,9 @@ def create_visuals(
                 suffix=suffix,
                 filepath=filepath,
                 save_inputs=save_inputs,
-                graph_label="Chikungunya case fatality rate by age group (all years total)",
+                graph_label="zika case fatality rate by age group (all years total)",
                 graph_about=(
-                    "Chikungunya case fatality rate (deaths among confirmed cases) "
+                    "zika case fatality rate (deaths among confirmed cases) "
                     "across all available years, by age group."
                 ),
             )
@@ -194,7 +194,7 @@ def create_visuals(
         fig_casos_age, gid_casos_age, glab_casos_age, gabout_casos_age = (
             idw.fig_bar_chart(
                 data=df_cases_age,
-                title="Confirmed chikungunya cases by age group",
+                title="Confirmed zika cases by age group",
                 xlabel="Year",
                 ylabel="Number of confirmed cases",
                 index_column="ano",
@@ -203,9 +203,9 @@ def create_visuals(
                 suffix=suffix,
                 filepath=filepath,
                 save_inputs=save_inputs,
-                graph_label="Confirmed chikungunya cases by age group",
+                graph_label="Confirmed zika cases by age group",
                 graph_about=(
-                    "Number of confirmed chikungunya cases (classi_fin = 13) "
+                    "Number of confirmed zika cases (classi_fin = 13) "
                     "by year and age group."
                 ),
             )
@@ -218,7 +218,7 @@ def create_visuals(
         df_hosp_age.columns.name = None
         fig_hosp_age, gid_hosp_age, glab_hosp_age, gabout_hosp_age = idw.fig_bar_chart(
             data=df_hosp_age,
-            title="Chikungunya hospitalization rate (%) by age group",
+            title="zika hospitalization rate (%) by age group",
             xlabel="Year",
             ylabel="Hospitalization rate (%)",
             index_column="ano",
@@ -227,9 +227,9 @@ def create_visuals(
             suffix=suffix,
             filepath=filepath,
             save_inputs=save_inputs,
-            graph_label="Chikungunya hospitalization rate by age group",
+            graph_label="zika hospitalization rate by age group",
             graph_about=(
-                "Proportion of confirmed chikungunya cases (classi_fin = 13) "
+                "Proportion of confirmed zika cases (classi_fin = 13) "
                 "with hospitalization (hospitaliz = 1), by year and age group."
             ),
         )
@@ -242,7 +242,7 @@ def create_visuals(
         fig_letal_age, gid_letal_age, glab_letal_age, gabout_letal_age = (
             idw.fig_bar_chart(
                 data=df_letal_age,
-                title="Chikungunya case fatality rate (%) by age group",
+                title="zika case fatality rate (%) by age group",
                 xlabel="Year",
                 ylabel="Case fatality rate (%)",
                 index_column="ano",
@@ -251,9 +251,9 @@ def create_visuals(
                 suffix=suffix,
                 filepath=filepath,
                 save_inputs=save_inputs,
-                graph_label="Chikungunya case fatality rate by age group",
+                graph_label="zika case fatality rate by age group",
                 graph_about=(
-                    "Chikungunya case fatality rate: deaths (evolucao IN (2, 3, 4)) "
+                    "zika case fatality rate: deaths (evolucao IN (2, 3, 4)) "
                     "divided by confirmed cases (classi_fin = 13), by year and age group."
                 ),
             )

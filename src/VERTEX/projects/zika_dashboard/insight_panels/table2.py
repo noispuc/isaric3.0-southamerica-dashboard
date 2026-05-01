@@ -296,13 +296,13 @@ def create_visuals(
     disp = disp.rename(columns=rename_map)
     table2 = idw.fig_table(
         disp,
-        table_key="table2_chik",
+        table_key="table2_zika",
         suffix=suffix,
         filepath=filepath,
         save_inputs=save_inputs,
         graph_label="Tabela 2",
         graph_about=(
-            "Characteristics of confirmed chikungunya cases according to outcome "
+            "Characteristics of confirmed Zika cases according to outcome "
             "(Cure vs Death)"
         ),
     )

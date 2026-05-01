@@ -129,7 +129,7 @@ def _get_age_group_col(df: pd.DataFrame) -> str | None:
 
 def _build_table1(df: pd.DataFrame):
     df = df.copy()
-    groups = OrderedDict([("Chikungunya", df)])
+    groups = OrderedDict([("Zika", df)])
     n_all = len(df)
     col_names = list(groups.keys())
     rows: List[Dict[str, str]] = []
@@ -262,16 +262,16 @@ def create_visuals(
 ):
     df_sinan = _load_sinan_view(year=2024)
     disp, n_all = _build_table1(df_sinan)
-    disp = disp.rename(columns={"Chikungunya": f"Chikungunya N = {_fmt_N(n_all)}"})
+    disp = disp.rename(columns={"Zika": f"Zika N = {_fmt_N(n_all)}"})
     table1 = idw.fig_table(
         disp,
-        table_key="table1_chik",
+        table_key="table1_zika",
         suffix=suffix,
         filepath=filepath,
         save_inputs=save_inputs,
         graph_label="Table 1",
         graph_about=(
-            "Demographic and clinical characteristics of confirmed chikungunya cases "
+            "Demographic and clinical characteristics of confirmed Zika cases "
             "(SINAN)"
         ),
     )

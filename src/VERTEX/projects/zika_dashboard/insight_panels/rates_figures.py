@@ -8,7 +8,7 @@ def _get_anos_disponiveis(engine) -> list[int]:
     """
     Lê os anos disponíveis na view de incidência de chikungunya.
     """
-    sql = "SELECT DISTINCT ano FROM sinan_zika.vw_chik_incidencia_100k ORDER BY ano;"
+    sql = "SELECT DISTINCT ano FROM sinan_zika.vw_zika_incidencia_100k_new ORDER BY ano;"
     df = pd.read_sql(sql, engine)
     return df["ano"].astype(int).tolist()
 
@@ -31,7 +31,7 @@ def _load_taxa_incidencia_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, incidencia_100k
-        FROM sinan_zika.vw_chik_incidencia_100k_new
+        FROM sinan_zika.vw_zika_incidencia_100k_new
         WHERE ano = %(ano)s
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})
@@ -53,7 +53,7 @@ def _load_taxa_obito_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, taxa_mortalidade_100k
-        FROM sinan_zika.vw_chik_mortalidade_100k_new
+        FROM sinan_zika.vw_zika_mortalidade_100k_new
         WHERE ano = %(ano)s
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})
@@ -74,7 +74,7 @@ def _load_taxa_hosp_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, taxa_hospitalizacao_pct
-        FROM sinan_zika.vw_chik_hospitalizacao_porcent_new
+        FROM sinan_zika.vw_zika_hospitalizacao_porcent_new
         WHERE ano = %(ano)s
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})
@@ -96,7 +96,7 @@ def _load_taxa_letalidade_ano(engine, ano: int) -> pd.DataFrame:
     """
     sql = """
         SELECT ano, taxa_letalidade_pct
-        FROM sinan_zika.vw_chik_letalidade_porcent_new
+        FROM sinan_zika.vw_zika_letalidade_porcent_new
         WHERE ano = %(ano)s
     """
     df = pd.read_sql(sql, engine, params={"ano": ano})
@@ -139,7 +139,7 @@ def create_visuals(
         df_casos_all = pd.concat(dfs_casos, ignore_index=True)
         fig_casos, gid_casos, glab_casos, gabout_casos = idw.fig_bar_chart(
             data=df_casos_all,
-            title="Confirmed Chikungunya Cases Rate per 100k pop.",
+            title="Confirmed Zika Cases Rate per 100k pop.",
             xlabel="Year",
             ylabel="Cases per 100k inhabitants",
             index_column="ano",
@@ -148,9 +148,9 @@ def create_visuals(
             suffix=suffix,
             filepath=filepath,
             save_inputs=save_inputs,
-            graph_label="Confirmed chikungunya cases rate",
+            graph_label="Confirmed Zika cases rate",
             graph_about=(
-                "Confirmed chikungunya cases rate per 100k inhabitants, "
+                "Confirmed Zika cases rate per 100k inhabitants, "
                 "for each available year, using annual population as denominator."
             ),
         )
@@ -165,7 +165,7 @@ def create_visuals(
         df_obito_all = pd.concat(dfs_obito, ignore_index=True)
         fig_obito, gid_obito, glab_obito, gabout_obito = idw.fig_bar_chart(
             data=df_obito_all,
-            title="Chikungunya Mortality Rate per 100k pop.",
+            title="Zika Mortality Rate per 100k pop.",
             xlabel="Year",
             ylabel="Deaths per 100k inhabitants",
             index_column="ano",
@@ -174,9 +174,9 @@ def create_visuals(
             suffix=suffix,
             filepath=filepath,
             save_inputs=save_inputs,
-            graph_label="Chikungunya mortality rate",
+            graph_label="Zika mortality rate",
             graph_about=(
-                "Chikungunya mortality rate per 100k inhabitants, "
+                "Zika mortality rate per 100k inhabitants, "
                 "for each available year, using annual population as denominator."
             ),
         )
@@ -191,7 +191,7 @@ def create_visuals(
         df_hosp_all = pd.concat(dfs_hosp, ignore_index=True)
         fig_hosp, gid_hosp, glab_hosp, gabout_hosp = idw.fig_bar_chart(
             data=df_hosp_all,
-            title="Chikungunya Hospitalization Rate (%)",
+            title="Zika Hospitalization Rate (%)",
             xlabel="Year",
             ylabel="%",
             index_column="ano",
@@ -200,9 +200,9 @@ def create_visuals(
             suffix=suffix,
             filepath=filepath,
             save_inputs=save_inputs,
-            graph_label="Chikungunya hospitalization rate",
+            graph_label="Zika hospitalization rate",
             graph_about=(
-                "Proportion of confirmed chikungunya cases (classi_fin = 13) "
+                "Proportion of confirmed Zika cases (classi_fin = 13) "
                 "with hospitalization (hospitaliz = 1), by year."
             ),
         )
@@ -217,7 +217,7 @@ def create_visuals(
         df_letal_all = pd.concat(dfs_letal, ignore_index=True)
         fig_letal, gid_letal, glab_letal, gabout_letal = idw.fig_bar_chart(
             data=df_letal_all,
-            title="Chikungunya Case Fatality Rate (%)",
+            title="Zika Case Fatality Rate (%)",
             xlabel="Year",
             ylabel="%",
             index_column="ano",
@@ -226,9 +226,9 @@ def create_visuals(
             suffix=suffix,
             filepath=filepath,
             save_inputs=save_inputs,
-            graph_label="Chikungunya case fatality rate",
+            graph_label="Zika case fatality rate",
             graph_about=(
-                "Chikungunya case fatality rate: deaths (evolucao IN (2, 3, 4)) "
+                "Zika case fatality rate: deaths (evolucao IN (2, 3, 4)) "
                 "divided by confirmed cases (classi_fin = 13), by year."
             ),
         )
