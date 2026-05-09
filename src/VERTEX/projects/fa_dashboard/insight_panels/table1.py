@@ -55,20 +55,14 @@ def _get_engine_from_env():
 
 def _load_fa_view(year: int = 2024) -> pd.DataFrame:
     """
-    Lê diretamente a view febre_amarela.vw_fa_casos_tab12_base.
-
-    Adaptação para febre amarela:
-    - A base já contém apenas casos de febre amarela.
-    - Não há classi_fin na base disponibilizada.
-    - O nome da view segue o padrão das views de chikungunya, trocando chik por fa.
-    - Sem sufixo _new.
+    Lê diretamente a view febre_amarela.vw_casos_tab12_base.
     """
     engine = _get_engine_from_env()
 
     sql = text(
         """
         SELECT *
-        FROM febre_amarela.vw_fa_casos_tab12_base
+        FROM febre_amarela.vw_casos_tab12_base
         WHERE ano = :ano
         """
     )
@@ -76,7 +70,7 @@ def _load_fa_view(year: int = 2024) -> pd.DataFrame:
     try:
         with engine.connect() as conn:
             print(
-                "[TABLE1_FA] Lendo febre_amarela.vw_fa_casos_tab12_base...",
+                "[TABLE1_FA] Lendo febre_amarela.vw_casos_tab12_base...",
                 flush=True,
             )
             df = pd.read_sql(sql, conn, params={"ano": year})
@@ -85,6 +79,10 @@ def _load_fa_view(year: int = 2024) -> pd.DataFrame:
         print("[TABLE1_FA] Colunas:", list(df.columns), flush=True)
 
         return df
+
+    except Exception as e:
+        print("[TABLE1_FA] ERRO ao conectar/buscar na VIEW:", repr(e), flush=True)
+        raise
 
     except Exception as e:
         print("[TABLE1_FA] ERRO ao conectar/buscar na VIEW:", repr(e), flush=True)

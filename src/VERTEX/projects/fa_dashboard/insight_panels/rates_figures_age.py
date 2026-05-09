@@ -40,11 +40,7 @@ def _load_rates_by_age(engine) -> pd.DataFrame:
 
     Tudo agregado por (ano, faixa_etaria).
 
-    Adaptação para febre amarela:
-    - A base já contém apenas casos de febre amarela.
-    - Não há classi_fin na base disponibilizada.
-    - Não há variável de hospitalização.
-    - Óbito é tratado a partir da lógica já implementada nas views de FA.
+    Fonte: febre_amarela.vw_fa_porcent_idade.
     """
     sql = """
         SELECT
@@ -54,7 +50,7 @@ def _load_rates_by_age(engine) -> pd.DataFrame:
             casos_confirmados,
             obitos_fa,
             taxa_letalidade_pct
-        FROM febre_amarela.vw_porcent_idade
+        FROM febre_amarela.vw_fa_porcent_idade
         WHERE faixa_etaria <> 'Ignorado'
         ORDER BY ano, faixa_ordem;
     """
