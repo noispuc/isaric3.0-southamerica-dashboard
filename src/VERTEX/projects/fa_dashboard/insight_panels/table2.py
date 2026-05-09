@@ -84,10 +84,6 @@ def _load_fa_view(year: int = 2024) -> pd.DataFrame:
         print("[TABLE2_FA] ERRO ao conectar/buscar na VIEW:", repr(e), flush=True)
         raise
 
-    except Exception as e:
-        print("[TABLE2_FA] ERRO ao conectar/buscar na VIEW:", repr(e), flush=True)
-        raise
-
 
 def _fmt_N(n: int) -> str:
     return f"{n:,}".replace(",", ".")
@@ -208,14 +204,14 @@ def _prepare_fa_columns(df: pd.DataFrame) -> pd.DataFrame:
     - idade_anos
     - faixa_etaria_view
     - sexo_label
+    - obito_flag
     - desfecho_label
 
-    Para FA, desfecho_label é derivado de obito_flag:
+    Para FA, o desfecho é definido prioritariamente por obito_flag:
     - obito_flag = 1 -> Óbito
     - obito_flag = 0 -> Não óbito
 
-    Importante: Não óbito não é necessariamente Cura, pois a base de FA
-    não possui variável de evolução do caso.
+    Isso evita problemas de acento/grafia em desfecho_label.
     """
     df = df.copy()
 
@@ -244,40 +240,64 @@ def _prepare_fa_columns(df: pd.DataFrame) -> pd.DataFrame:
             )
         )
 
-    if "desfecho_label" not in df.columns:
-        if "obito_flag" in df.columns:
-            df["desfecho_label"] = np.where(
-                pd.to_numeric(df["obito_flag"], errors="coerce") == 1,
-                "Óbito",
-                "Não óbito",
-            )
-        elif "obito" in df.columns:
-            obito_norm = df["obito"].astype(str).str.strip().str.upper()
-            df["desfecho_label"] = np.where(
-                obito_norm == "SIM",
-                "Óbito",
-                "Não óbito",
-            )
-        else:
-            raise ValueError(
-                "[TABLE2_FA] Não foi encontrada coluna de desfecho. "
-                "Esperado: desfecho_label, obito_flag ou obito."
-            )
+    # Fonte principal: obito_flag
+    if "obito_flag" in df.columns:
+        df["obito_flag"] = pd.to_numeric(df["obito_flag"], errors="coerce")
 
-    df["desfecho_label"] = (
-        df["desfecho_label"]
-        .astype(str)
-        .str.strip()
-        .replace(
+        df["desfecho_label"] = np.where(
+            df["obito_flag"] == 1,
+            "Óbito",
+            "Não óbito",
+        )
+
+    # Fallback: obito textual
+    elif "obito" in df.columns:
+        obito_norm = df["obito"].astype(str).str.strip().str.upper()
+
+        df["obito_flag"] = np.where(
+            obito_norm == "SIM",
+            1,
+            0,
+        )
+
+        df["desfecho_label"] = np.where(
+            df["obito_flag"] == 1,
+            "Óbito",
+            "Não óbito",
+        )
+
+    # Fallback final: desfecho_label textual
+    elif "desfecho_label" in df.columns:
+        desfecho_norm = (
+            df["desfecho_label"]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+        )
+
+        df["obito_flag"] = desfecho_norm.map(
             {
-                "Cura": "Não óbito",
-                "Nao obito": "Não óbito",
-                "Não Obito": "Não óbito",
-                "Nao Óbito": "Não óbito",
-                "Não Óbito": "Não óbito",
+                "OBITO": 1,
+                "ÓBITO": 1,
+                "NAO OBITO": 0,
+                "NÃO OBITO": 0,
+                "NAO ÓBITO": 0,
+                "NÃO ÓBITO": 0,
+                "CURA": 0,
             }
         )
-    )
+
+        df["desfecho_label"] = np.where(
+            df["obito_flag"] == 1,
+            "Óbito",
+            "Não óbito",
+        )
+
+    else:
+        raise ValueError(
+            "[TABLE2_FA] Não foi encontrada coluna de desfecho. "
+            "Esperado: obito_flag, obito ou desfecho_label."
+        )
 
     return df
 
@@ -299,17 +319,17 @@ def _split_by_outcome(df: pd.DataFrame):
       - Não óbito
       - Óbito
 
-    Para febre amarela, não usamos "Cura", pois a base não possui
-    variável de evolução equivalente ao SINAN original.
+    Usa obito_flag para evitar problemas de acento/grafia em desfecho_label.
     """
-    if "desfecho_label" not in df.columns:
-        raise ValueError("[TABLE2_FA] Coluna 'desfecho_label' não encontrada.")
+    if "obito_flag" not in df.columns:
+        raise ValueError("[TABLE2_FA] Coluna 'obito_flag' não encontrada.")
 
-    mask_any = df["desfecho_label"].isin(["Não óbito", "Óbito"])
+    df = df.copy()
+    df["obito_flag"] = pd.to_numeric(df["obito_flag"], errors="coerce")
 
-    df_any = df.loc[mask_any].copy()
-    df_not_death = df_any.loc[df_any["desfecho_label"] == "Não óbito"]
-    df_death = df_any.loc[df_any["desfecho_label"] == "Óbito"]
+    df_any = df[df["obito_flag"].isin([0, 1])].copy()
+    df_not_death = df_any[df_any["obito_flag"] == 0]
+    df_death = df_any[df_any["obito_flag"] == 1]
 
     groups = OrderedDict(
         [
@@ -349,7 +369,6 @@ def _build_table2(df: pd.DataFrame):
 
         rows.append(row)
 
-    # Idade mediana
     med_values = {
         g: _format_median_iqr(gdf.get("idade_anos", pd.Series(dtype=float)))
         for g, gdf in groups.items()
@@ -357,7 +376,6 @@ def _build_table2(df: pd.DataFrame):
 
     add_row("Idade (Anos), mediana (IQR)", med_values)
 
-    # Faixas etárias
     for faixa in AGE_LABELS:
         valores = {}
 
@@ -369,7 +387,6 @@ def _build_table2(df: pd.DataFrame):
 
         add_row(f"{faixa}, No. (%)", valores)
 
-    # Sexo feminino
     if "sexo_label" in df.columns:
         sex_all = df["sexo_label"].dropna()
         n_valid_sex = int(sex_all.shape[0])
@@ -399,7 +416,6 @@ def _build_table2(df: pd.DataFrame):
 
         add_row(label_genero, valores)
 
-    # Escolaridade: só entra se existir
     if "escolaridade_nivel" in df.columns:
         esc_all = df["escolaridade_nivel"].dropna()
         n_valid_esc = int(esc_all.shape[0])
@@ -430,7 +446,6 @@ def _build_table2(df: pd.DataFrame):
 
             add_row(cat, valores)
 
-    # Raça: só entra se existir
     if "raca_label" in df.columns:
         race_all = df["raca_label"].dropna()
         n_valid_race = int(race_all.shape[0])
