@@ -1,0 +1,26 @@
+{
+	"project_name": "South America Chikungunya Dashboard",
+	"api_key": null,
+	"api_url": null,
+	"data_source": "none",
+	"map_layout_center_latitude": 6,
+	"map_layout_center_longitude": -75,
+	"map_layout_zoom": 1.7,
+	"save_public_outputs": false,
+	"save_filtered_public_outputs": false,
+	"public_path": "/PUBLIC",
+	"insight_panels_path": "insight_panels/",
+	"map_country_overrides": {
+		"COL": {
+			"country_name": "Colombia",
+			"country_count": 2886
+		}
+	},
+	"insight_panels": [
+		"sivigila_chikungunya",
+		"sivigila_dengue",
+		"sivigila_zika",
+		"sivigila_total_geral",
+		"sivigila_febre_amarela"
+	]
+}
