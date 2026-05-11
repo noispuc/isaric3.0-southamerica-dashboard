@@ -195,6 +195,8 @@ def _load_age_rates(engine) -> pd.DataFrame:
         return df
 
     df["ano"] = df["ano"].astype(str)
+    df["faixa_etaria"] = df["faixa_etaria"].astype(str).str.strip()
+    df = df[df["faixa_etaria"].isin(FAIXAS_ORDENADAS)].copy()
     df["faixa_etaria"] = pd.Categorical(
         df["faixa_etaria"], categories=FAIXAS_ORDENADAS, ordered=True
     )
@@ -307,6 +309,22 @@ def _create_age_rate_visuals(visuals, df_age, filepath, suffix, save_inputs):
 
     df_age = df_age.sort_values(["ano", "faixa_etaria"])
 
+    # Defensive aggregation: the SIVIGILA age view can occasionally return more
+    # than one row for the same year + age group after disease bucketing. Pandas
+    # pivot() requires a unique index/column pair, so we aggregate first and
+    # recompute rates from counts instead of averaging percentages.
+    df_age = df_age.groupby(["ano", "faixa_etaria"], as_index=False, observed=True)[
+        ["casos_confirmados", "casos_hosp", "obitos_dengue"]
+    ].sum()
+    df_age["taxa_hosp_pct"] = (
+        df_age["casos_hosp"]
+        / df_age["casos_confirmados"].where(df_age["casos_confirmados"] > 0)
+    ) * 100.0
+    df_age["taxa_letalidade_pct"] = (
+        df_age["obitos_dengue"]
+        / df_age["casos_confirmados"].where(df_age["casos_confirmados"] > 0)
+    ) * 100.0
+
     df_age_total = df_age.groupby("faixa_etaria", as_index=False, observed=True)[
         ["casos_confirmados", "casos_hosp", "obitos_dengue"]
     ].sum()
@@ -371,7 +389,7 @@ def _create_age_rate_visuals(visuals, df_age, filepath, suffix, save_inputs):
         save_inputs,
     )
 
-    df_cases_age = df_age.pivot(index="ano", columns="faixa_etaria", values="casos_confirmados").reset_index()
+    df_cases_age = df_age.pivot_table(index="ano", columns="faixa_etaria", values="casos_confirmados", aggfunc="sum", observed=True).reset_index()
     df_cases_age.columns.name = None
     _add_bar_chart(
         visuals,
@@ -387,7 +405,7 @@ def _create_age_rate_visuals(visuals, df_age, filepath, suffix, save_inputs):
         save_inputs,
     )
 
-    df_hosp_age = df_age.pivot(index="ano", columns="faixa_etaria", values="taxa_hosp_pct").reset_index()
+    df_hosp_age = df_age.pivot_table(index="ano", columns="faixa_etaria", values="taxa_hosp_pct", aggfunc="mean", observed=True).reset_index()
     df_hosp_age.columns.name = None
     _add_bar_chart(
         visuals,
@@ -403,7 +421,7 @@ def _create_age_rate_visuals(visuals, df_age, filepath, suffix, save_inputs):
         save_inputs,
     )
 
-    df_letal_age = df_age.pivot(index="ano", columns="faixa_etaria", values="taxa_letalidade_pct").reset_index()
+    df_letal_age = df_age.pivot_table(index="ano", columns="faixa_etaria", values="taxa_letalidade_pct", aggfunc="mean", observed=True).reset_index()
     df_letal_age.columns.name = None
     _add_bar_chart(
         visuals,

@@ -17,10 +17,10 @@
 		}
 	},
 	"insight_panels": [
-		"sivigila_chikungunya",
-		"sivigila_dengue",
-		"sivigila_zika",
 		"sivigila_total_geral",
+		"sivigila_dengue",
+		"sivigila_chikungunya",
+		"sivigila_zika",
 		"sivigila_febre_amarela"
 	]
 }
