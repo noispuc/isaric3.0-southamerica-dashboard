@@ -17,7 +17,6 @@
 		}
 	},
 	"insight_panels": [
-        "age_mortality_risk_panel",
 		"rates_figures",
 		"rates_figures_age",
 		"table1",
