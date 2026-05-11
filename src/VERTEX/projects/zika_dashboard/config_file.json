@@ -18,9 +18,6 @@
 	},
 	"insight_panels": [
 		"rates_figures",
-		"rates_figures_SS",
-		"rates_figures_CS",
-		"rates_figures_G",
 		"rates_figures_age",
 		"table1",
 		"table2"
